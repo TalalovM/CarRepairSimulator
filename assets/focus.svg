@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 340" role="img" aria-label="Ford Focus">
+  <rect width="640" height="340" fill="#e8e1d6"/>
+  <rect x="0" y="238" width="640" height="102" fill="#b8aa95"/>
+  <path d="M94 218h420c29 0 55 22 61 50H68c5-31 31-50 26-50z" fill="#34568b"/>
+  <path d="M178 143h236c42 0 82 36 99 78H122c19-42 41-78 56-78z" fill="#4169ad"/>
+  <path d="M197 160h92v56H151c17-34 31-56 46-56zM313 160h92c31 0 57 25 76 56H313z" fill="#f6fbff"/>
+  <circle cx="166" cy="268" r="44" fill="#20262b"/>
+  <circle cx="166" cy="268" r="19" fill="#c7d0d9"/>
+  <circle cx="466" cy="268" r="44" fill="#20262b"/>
+  <circle cx="466" cy="268" r="19" fill="#c7d0d9"/>
+  <rect x="88" y="232" width="58" height="14" rx="7" fill="#f4c95d"/>
+  <rect x="516" y="230" width="34" height="16" rx="7" fill="#d84646"/>
+</svg>

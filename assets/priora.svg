@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 340" role="img" aria-label="Lada Priora">
+  <rect width="640" height="340" fill="#eadfd7"/>
+  <rect x="0" y="238" width="640" height="102" fill="#b99c89"/>
+  <path d="M100 222h388c34 0 59 20 65 48H72c5-30 31-48 28-48z" fill="#9b3f35"/>
+  <path d="M178 154h213c42 0 76 31 95 68H128c17-36 39-68 50-68z" fill="#b54c41"/>
+  <path d="M198 168h82v49H153c16-29 32-49 45-49zM304 168h83c29 0 55 21 73 49H304z" fill="#fff6ee"/>
+  <circle cx="164" cy="270" r="42" fill="#27201d"/>
+  <circle cx="164" cy="270" r="18" fill="#d7c3b7"/>
+  <circle cx="452" cy="270" r="42" fill="#27201d"/>
+  <circle cx="452" cy="270" r="18" fill="#d7c3b7"/>
+  <path d="M220 230l28 18M368 224l38 20" stroke="#7d312a" stroke-width="10" stroke-linecap="round"/>
+  <rect x="86" y="235" width="54" height="13" rx="7" fill="#ffd166"/>
+  <rect x="496" y="235" width="36" height="13" rx="7" fill="#e35a4f"/>
+</svg>
