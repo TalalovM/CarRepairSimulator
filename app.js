@@ -113,18 +113,18 @@ const cars = [
     ]
   },
   {
-    id: "mercedes-benz-w204",
+    id: "mercedes-w204",
     name: "Mercedes Benz W204",
     year: 2008,
     mileage: 201000,
     price: 820000,
     resale: 1030000,
     condition: "good",
-    image: "assets/mercedes-benz-w204.jpg",
+    image: "assets/mercedes-w204.jpg",
     baseHealth: { engine: 70, suspension: 58, brakes: 66, electric: 68, body: 64 },
     visibleRepairs: [
-      { id: "mercedes-benz-w204-service", name: "Плановое ТО", system: "engine", cost: 36000, impact: 12 },
-      { id: "mercedes-benz-w204-glass", name: "Лобовое стекло", system: "body", cost: 31000, impact: 10 }
+      { id: "mercedes-w204-service", name: "Плановое ТО", system: "engine", cost: 36000, impact: 12 },
+      { id: "mercedes-w204-glass", name: "Лобовое стекло", system: "body", cost: 31000, impact: 10 }
     ],
     hiddenRepairs: [
       { id: "mercedes-benz-w204-rack", name: "Рулевая рейка", system: "suspension", cost: 84000, impact: 18 }
@@ -138,7 +138,7 @@ const cars = [
     price: 210000,
     resale: 330000,
     condition: "poor",
-    image: "assets/lada-priora..jpg",
+    image: "assets/lada-priora.jpg",
     baseHealth: { engine: 38, suspension: 34, brakes: 43, electric: 28, body: 40 },
     visibleRepairs: [
       { id: "priora-engine", name: "Ремонт двигателя", system: "engine", cost: 68000, impact: 26 },
