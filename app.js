@@ -27,7 +27,7 @@ const cars = [
     price: 500000,
     resale: 735000,
     condition: "poor",
-    image: "assets/camry.svg",
+    image: "assets/mercedes-benz-w201.jpg",
     baseHealth: { engine: 40, suspension: 30, brakes: 50, electric: 20, body: 35 },
     visibleRepairs: [
       { id: "w201-suspension", name: "Ремонт передней подвески", system: "suspension", cost: 47000, impact: 22 },
@@ -46,7 +46,7 @@ const cars = [
     price: 900000,
     resale: 1175000,
     condition: "fair",
-    image: "assets/focus.svg",
+    image: "assets/mercedes-benz-w124.jpg",
     baseHealth: { engine: 58, suspension: 45, brakes: 62, electric: 48, body: 54 },
     visibleRepairs: [
       { id: "w124-brakes", name: "Тормозные диски и колодки", system: "brakes", cost: 50000, impact: 18 },
@@ -65,7 +65,7 @@ const cars = [
     price: 650000,
     resale: 930000,
     condition: "good",
-    image: "assets/civic.svg",
+    image: "assets/bmw-e30.jpg",
     baseHealth: { engine: 68, suspension: 63, brakes: 66, electric: 55, body: 72 },
     visibleRepairs: [
       { id: "e30-suspension", name: "Сайлентблоки и стойки", system: "suspension", cost: 52000, impact: 18 },
@@ -83,7 +83,7 @@ const cars = [
     price: 480000,
     resale: 650000,
     condition: "fair",
-    image: "assets/octavia.svg",
+    image: "assets/audi-a4.jpg",
     baseHealth: { engine: 52, suspension: 48, brakes: 61, electric: 44, body: 62 },
     visibleRepairs: [
       { id: "a4-service", name: "Большое ТО", system: "engine", cost: 41000, impact: 16 },
@@ -102,7 +102,7 @@ const cars = [
     price: 430000,
     resale: 610000,
     condition: "fair",
-    image: "assets/logan.svg",
+    image: "assets/volkswagen-golf-5.jpg",
     baseHealth: { engine: 55, suspension: 52, brakes: 58, electric: 51, body: 60 },
     visibleRepairs: [
       { id: "golf-clutch", name: "Комплект сцепления", system: "engine", cost: 62000, impact: 19 },
@@ -113,21 +113,21 @@ const cars = [
     ]
   },
   {
-    id: "toyota-camry-v40",
-    name: "Toyota Camry V40",
+    id: "mercedes-benz-w204",
+    name: "Mercedes Benz W204",
     year: 2008,
     mileage: 201000,
     price: 820000,
     resale: 1030000,
     condition: "good",
-    image: "assets/camry.svg",
+    image: "assets/mercedes-benz-w204.jpg",
     baseHealth: { engine: 70, suspension: 58, brakes: 66, electric: 68, body: 64 },
     visibleRepairs: [
-      { id: "camry-service", name: "Плановое ТО", system: "engine", cost: 36000, impact: 12 },
-      { id: "camry-glass", name: "Лобовое стекло", system: "body", cost: 31000, impact: 10 }
+      { id: "mercedes-benz-w204-service", name: "Плановое ТО", system: "engine", cost: 36000, impact: 12 },
+      { id: "mercedes-benz-w204-glass", name: "Лобовое стекло", system: "body", cost: 31000, impact: 10 }
     ],
     hiddenRepairs: [
-      { id: "camry-rack", name: "Рулевая рейка", system: "suspension", cost: 84000, impact: 18 }
+      { id: "mercedes-benz-w204-rack", name: "Рулевая рейка", system: "suspension", cost: 84000, impact: 18 }
     ]
   },
   {
@@ -138,7 +138,7 @@ const cars = [
     price: 210000,
     resale: 330000,
     condition: "poor",
-    image: "assets/priora.svg",
+    image: "assets/lada-priora..jpg",
     baseHealth: { engine: 38, suspension: 34, brakes: 43, electric: 28, body: 40 },
     visibleRepairs: [
       { id: "priora-engine", name: "Ремонт двигателя", system: "engine", cost: 68000, impact: 26 },
@@ -157,14 +157,14 @@ const cars = [
     price: 520000,
     resale: 720000,
     condition: "good",
-    image: "assets/civic.svg",
+    image: "assets/honda-civic.jpg",
     baseHealth: { engine: 72, suspension: 62, brakes: 61, electric: 70, body: 68 },
     visibleRepairs: [
-      { id: "civic-paint", name: "Окрас бампера", system: "body", cost: 33000, impact: 10 },
-      { id: "civic-brakes", name: "Передние тормоза", system: "brakes", cost: 27000, impact: 14 }
+      { id: "honda-civic-paint", name: "Окрас бампера", system: "body", cost: 33000, impact: 10 },
+      { id: "chonda-civic-brakes", name: "Передние тормоза", system: "brakes", cost: 27000, impact: 14 }
     ],
     hiddenRepairs: [
-      { id: "civic-sensors", name: "Датчики ABS", system: "electric", cost: 29000, impact: 12 }
+      { id: "honda-civic-sensors", name: "Датчики ABS", system: "electric", cost: 29000, impact: 12 }
     ]
   }
 ];
