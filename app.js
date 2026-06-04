@@ -23,7 +23,7 @@ const cars = [
     id: "mercedes-w201",
     name: "Mercedes-Benz W201",
     year: 1991,
-    mileage: 246000,
+    mileage: 753428,
     price: 500000,
     resale: 735000,
     condition: "poor",
@@ -31,37 +31,37 @@ const cars = [
     baseHealth: { engine: 40, suspension: 30, brakes: 50, electric: 20, body: 35 },
     visibleRepairs: [
       { id: "w201-suspension", name: "Ремонт передней подвески", system: "suspension", cost: 47000, impact: 22 },
-      { id: "w201-body", name: "Кузовные работы", system: "body", cost: 40000, impact: 18 }
+      { id: "w201-body", name: "Кузовные работы", system: "body", cost: 57500, impact: 18 }
     ],
     hiddenRepairs: [
-      { id: "w201-engine", name: "Цепь ГРМ и течь масла", system: "engine", cost: 126000, impact: 28 },
-      { id: "w201-electric", name: "Проводка блока предохранителей", system: "electric", cost: 38000, impact: 24 }
+      { id: "w201-engine", name: "Цепь ГРМ и течь масла", system: "engine", cost: 85000, impact: 28 },
+      { id: "w201-electric", name: "Блок предохранителей", system: "electric", cost: 38000, impact: 24 }
     ]
   },
   {
     id: "mercedes-w124",
     name: "Mercedes-Benz W124",
     year: 1994,
-    mileage: 221000,
-    price: 700000,
-    resale: 875000,
+    mileage: 435981,
+    price: 900000,
+    resale: 1175000,
     condition: "fair",
     image: "assets/focus.svg",
     baseHealth: { engine: 58, suspension: 45, brakes: 62, electric: 48, body: 54 },
     visibleRepairs: [
-      { id: "w124-brakes", name: "Тормозные диски и колодки", system: "brakes", cost: 39000, impact: 18 },
-      { id: "w124-detail", name: "Полировка кузова", system: "body", cost: 23000, impact: 10 }
+      { id: "w124-brakes", name: "Тормозные диски и колодки", system: "brakes", cost: 50000, impact: 18 },
+      { id: "w124-detail", name: "Полировка кузова", system: "body", cost: 45000, impact: 10 }
     ],
     hiddenRepairs: [
-      { id: "w124-gearbox", name: "Ремонт АКПП", system: "engine", cost: 168000, impact: 24 },
-      { id: "w124-wiring", name: "Плавающая ошибка проводки", system: "electric", cost: 46000, impact: 18 }
+      { id: "w124-gearbox", name: "Ремонт АКПП", system: "engine", cost: 125000, impact: 24 },
+      { id: "w124-wiring", name: "Плавающая ошибка проводки", system: "electric", cost: 25000, impact: 18 }
     ]
   },
   {
     id: "bmw-e30",
     name: "BMW E30",
     year: 1989,
-    mileage: 198000,
+    mileage: 356254,
     price: 650000,
     resale: 930000,
     condition: "good",
