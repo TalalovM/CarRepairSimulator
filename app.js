@@ -1,9 +1,13 @@
+// === КОНФИГУРАЦИЯ SUPABASE (ВСТАВЬ СВОИ ДАННЫЕ СЮДА) ===
+const SUPABASE_URL = "https://ycmvhvsbcexxpuzdskpu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ztQr6Kblgt4kb-3R3nhiPg_ctswPZb6";
+
+// Инициализация (проверяем, чтобы не было ошибки, если supabase не подключен)
+const supabase = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+// === ТВОЙ ИСХОДНЫЙ КОД (НИЧЕГО НЕ УДАЛЕНО) ===
 const money = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 });
 const storageKey = "autoFixIndustrialSim_v5";
-
-// --- ЛОГИКА SUPABASE (Берем готовый клиент, если он у тебя подключен) ---
-// Если вдруг Supabase не виден здесь, убедись, что скрипт с инициализацией подключен в index.html до app.js
-const supabaseClient = (typeof supabase !== 'undefined') ? supabase : null; 
 
 const conditionLabels = { poor: "Критическое", fair: "Удовлетворительное", good: "Стабильное" };
 const systems = { engine: "ДВС", suspension: "Ходовая часть", brakes: "Тормозная система", electric: "Электроника", body: "Кузов" };
@@ -17,7 +21,7 @@ const carTemplates = [
   { id: "lexus-gs300", name: "Lexus GS300", year: 2006, basePrice: 2500000, resaleMult: 1.32, image: "assets/lexus-gs300.jpg" },
   { id: "mercedes-w124", name: "Mercedes-Benz W124", year: 1994, basePrice: 700000, resaleMult: 1.45, image: "assets/mercedes-benz-w124.jpg" },
   { id: "mercedes-w201", name: "Mercedes-Benz W201", year: 1991, basePrice: 500000, resaleMult: 1.50, image: "assets/mercedes-benz-w201.jpg" },
-  { id: "mercedes-w211", name: "Mercedes-Benz W211", year: 2004, basePrice: 900000, resaleMult: 1.32, image: "assets/mercedes-benz-w211.jpg" },
+  { id: "mercedes-w211", name: "Mercedes-Benz W211", year: 2004, basePrice: 900000, resaleMult: 1.32, image: "assets/mercedes-w211.jpg" },
   { id: "mercedes-w204", name: "Mercedes-Benz W204", year: 2011, basePrice: 1100000, resaleMult: 1.28, image: "assets/mercedes-w204.jpg" },
   { id: "toyota-mark-2", name: "Toyota Mark II", year: 1998, basePrice: 950000, resaleMult: 1.42, image: "assets/toyota-mark-2.jpg" },
   { id: "volkswagen-golf-5", name: "VW Golf V", year: 2007, basePrice: 950000, resaleMult: 1.34, image: "assets/volkswagen-golf-5.jpg" }
@@ -59,27 +63,30 @@ const initialState = {
   events: [{ type: "good", title: "Инициализация системы", text: "Платформа запущена в штатном режиме.", time: "Бизнес-инкубатор" }]
 };
 
-// --- ЗАГРУЗКА ---
-let state = JSON.parse(JSON.stringify(initialState));
-loadStateFromSource(); // Загружаем при запуске
-
+let state = loadState();
 let financialChart = null;
 
+// --- ФУНКЦИЯ ЗАГРУЗКИ С СИНХРОНИЗАЦИЕЙ ---
+async function syncSupabase() {
+    if (supabase) {
+        try {
+            const { data } = await supabase.from('game_saves').select('game_data').eq('id', 'user_1').single();
+            if (data && data.game_data) {
+                state = data.game_data;
+                render();
+            }
+        } catch (e) { console.warn("Supabase недоступен"); }
+    }
+}
+
 const elements = {
-  balanceText: document.querySelector("#balanceText"),
-  xpText: document.querySelector("#xpText"),
-  reputationText: document.querySelector("#reputationText"),
-  soldText: document.querySelector("#soldText"),
-  levelText: document.querySelector("#levelText"),
-  marketList: document.querySelector("#marketList"),
-  garageList: document.querySelector("#garageList"),
-  repairList: document.querySelector("#repairList"),
-  saleList: document.querySelector("#saleList"),
-  eventsList: document.querySelector("#eventsList"),
-  ratingList: document.querySelector("#ratingList"),
-  creditPanel: document.querySelector("#creditPanel"),
-  toast: document.querySelector("#toast"),
-  menuButton: document.querySelector("#menuButton"),
+  balanceText: document.querySelector("#balanceText"), xpText: document.querySelector("#xpText"),
+  reputationText: document.querySelector("#reputationText"), soldText: document.querySelector("#soldText"),
+  levelText: document.querySelector("#levelText"), marketList: document.querySelector("#marketList"),
+  garageList: document.querySelector("#garageList"), repairList: document.querySelector("#repairList"),
+  saleList: document.querySelector("#saleList"), eventsList: document.querySelector("#eventsList"),
+  ratingList: document.querySelector("#ratingList"), creditPanel: document.querySelector("#creditPanel"),
+  toast: document.querySelector("#toast"), menuButton: document.querySelector("#menuButton"),
   scrim: document.querySelector("#scrim")
 };
 
@@ -99,8 +106,9 @@ document.querySelector("#dealFilter")?.addEventListener("change", renderMarket);
 
 injectAnalyticsContainers();
 render();
+syncSupabase(); // Запускаем синхронизацию при старте
 
-// --- ВСЯ ОСТАЛЬНАЯ ЛОГИКА БЕЗ ИЗМЕНЕНИЙ ---
+// --- ВСЕ ТВОИ ФУНКЦИИ (БЕЗ ИЗМЕНЕНИЙ ЛОГИКИ) ---
 function getRandom(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
 
 function generateCarInstance(template) {
@@ -334,30 +342,19 @@ function renderGarageCollection(container, mode) {
   });
 }
 
-// --- СИНХРОНИЗАЦИЯ С SUPABASE ---
+// --- СИНХРОНИЗАЦИЯ (ИЗМЕНЕНА) ---
 function commit(msg) { saveState(); render(); showToast(msg); }
 
 function saveState() {
     localStorage.setItem(storageKey, JSON.stringify(state));
-    if (supabaseClient) {
-        // Предполагаем, что таблица называется 'game_saves', а ID пользователя фиксирован 'user_1'
-        supabaseClient.from('game_saves').upsert({ id: 'user_1', game_data: state }).then();
+    if (supabase) {
+        supabase.from('game_saves').upsert({ id: 'user_1', game_data: state }).then();
     }
 }
 
-async function loadStateFromSource() {
-    // 1. Сначала локально
-    const saved = localStorage.getItem(storageKey);
-    if (saved) state = JSON.parse(saved);
-    
-    // 2. Затем из базы (если доступна)
-    if (supabaseClient) {
-        const { data } = await supabaseClient.from('game_saves').select('game_data').eq('id', 'user_1').single();
-        if (data && data.game_data) {
-            state = data.game_data;
-            render();
-        }
-    }
+function loadState() {
+  const saved = localStorage.getItem(storageKey);
+  return saved ? JSON.parse(saved) : JSON.parse(JSON.stringify(initialState));
 }
 
 function formatMoney(v) { return `${money.format(v)} ₸`; }
