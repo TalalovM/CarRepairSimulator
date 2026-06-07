@@ -4,10 +4,77 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AutoFix - симулятор ремонта автомобилей</title>
-  <link rel="icon" type="image/png" href="Logo.png">
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 17, 26, 0.95);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .auth-card {
+      background: #111a26;
+      border: 1px solid #263447;
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+    .auth-card h2 { margin-top: 0; margin-bottom: 12px; color: #f4f7fb; }
+    .auth-card p { color: #9aa7b7; font-size: 14px; margin-bottom: 24px; }
+    .auth-form { display: flex; flex-direction: column; gap: 16px; text-align: left; }
+    .auth-form label { color: #9aa7b7; font-size: 13px; display: flex; flex-direction: column; gap: 6px; }
+    .auth-form input {
+      background: #0b111a;
+      border: 1px solid #263447;
+      padding: 10px 14px;
+      border-radius: 6px;
+      color: #f4f7fb;
+      font-size: 15px;
+    }
+    .auth-form input:focus { border-color: #2f6df6; outline: none; }
+    .auth-toggle-btn {
+      background: none; border: none; color: #2f6df6; cursor: pointer; font-size: 14px; margin-top: 16px; text-decoration: underline;
+    }
+    .auth-card .primary-button { width: 100%; padding: 12px; margin-top: 8px; }
+    .logout-section { margin-top: 24px; padding-top: 16px; border-top: 1px solid #263447; }
+  </style>
 </head>
 <body>
+
+  <div id="authOverlay" class="auth-overlay" style="display: none;">
+    <div class="auth-card">
+      <h2 id="authTitle">Регистрация мастера</h2>
+      <p id="authDesc">Создайте аккаунт, чтобы попасть в облачный рейтинг механиков.</p>
+      
+      <form id="authForm" class="auth-form">
+        <label id="usernameLabel">
+          Имя в рейтинге (Никнейм)
+          <input id="authUsername" type="text" placeholder="Например, СТО_Красавчик" required>
+        </label>
+        <label>
+          Электронная почта
+          <input id="authEmail" type="email" placeholder="example@mail.com" required>
+        </label>
+        <label>
+          Пароль
+          <input id="authPassword" type="password" placeholder="Минимум 6 символов" required>
+        </label>
+        <button class="primary-button" type="submit" id="authSubmitBtn">Зарегистрироваться</button>
+      </form>
+      
+      <button id="authToggleType" class="auth-toggle-btn" type="button">Уже есть аккаунт? Войти</button>
+    </div>
+  </div>
+
   <div class="app-layout">
     <aside class="sidebar" aria-label="Главное меню">
       <div class="logo">
@@ -60,9 +127,9 @@
           </article>
         </section>
         <div class="profile-card">
-          <span class="avatar">M</span>
+          <span class="avatar" id="avatarLetter">M</span>
           <div>
-            <strong>Механик</strong>
+            <strong id="profileName">Загрузка...</strong>
             <span id="levelText">Уровень 1</span>
           </div>
         </div>
@@ -213,6 +280,12 @@
             <h2>Новая игра</h2>
             <p>Очистит купленные автомобили, гараж, события и финансовую историю.</p>
             <button id="resetButton" class="danger-button" type="button">Начать заново</button>
+            
+            <div class="logout-section">
+              <h2>Аккаунт</h2>
+              <p>Вы можете выйти из текущего профиля механика.</p>
+              <button id="logoutButton" class="secondary-button" type="button">Выйти из аккаунта</button>
+            </div>
           </article>
         </section>
       </main>
