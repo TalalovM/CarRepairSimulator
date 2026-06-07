@@ -35,12 +35,10 @@ const carTemplates = [
 let currentMarketCars = [];
 let myGarage = [];
 
-// 3. СИСТЕМА КРАСИВЫХ УВЕДОМЛЕНИЙ (ПОЯВЛЯЮТСЯ ВНИЗУ СПРАВА)
+// 3. СИСТЕМА ПЛАВНЫХ УВЕДОМЛЕНИЙ (ВНИЗУ СПРАВА)
 function showNotification(message, type = 'success') {
-    // Ищем или создаем контейнер для уведомлений
     let container = document.getElementById('toast-container');
     if (!container) {
-        container = document.createElement('div');
         container = document.createElement('div');
         container.id = 'toast-container';
         container.style.cssText = `
@@ -55,7 +53,6 @@ function showNotification(message, type = 'success') {
         document.body.appendChild(container);
     }
 
-    // Создаем саму плашку
     const toast = document.createElement('div');
     toast.style.cssText = `
         background: #1e293b;
@@ -72,22 +69,17 @@ function showNotification(message, type = 'success') {
         transition: all 0.3s ease;
     `;
     toast.innerText = message;
-
     container.appendChild(toast);
 
-    // Анимация появления
     setTimeout(() => {
         toast.style.opacity = '1';
         toast.style.transform = 'translateY(0)';
     }, 10);
 
-    // Автоматическое удаление через 3 секунды с анимацией затухания
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transform = 'translateY(-20px)';
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
+        setTimeout(() => { toast.remove(); }, 300);
     }, 3000);
 }
 
@@ -291,6 +283,7 @@ function initFilters() {
     }
 }
 
+// 5. ОТРИСОВКА ГАРАЖА С ВЫБОРОМ НЕИСПРАВНОСТЕЙ И СТАТУСАМИ
 function renderGarageViews() {
     const lists = {
         garage: document.getElementById('garageList'),
@@ -318,19 +311,22 @@ function renderGarageViews() {
             clone.querySelector('.garage-image').onerror = function() { this.src = 'assets/camry.svg'; };
             clone.querySelector('.card-title h2').innerText = car.name;
             clone.querySelector('.garage-meta').innerText = `${car.year} год выпуска`;
+            
+            // Динамический вывод состояния систем
             clone.querySelector('.health-text').innerText = car.broken ? "35% (Требуется ремонт)" : "100% (Идеальное)";
             
             const sysBars = clone.querySelector('.system-bars');
             if (sysBars) {
                 sysBars.innerHTML = `
-                    <div style="font-size:12px; color:#9aa7b7; margin-bottom:4px;">Двигатель: ${car.broken ? '⚠️ Требует переборки' : '✅ Обслужен'}</div>
-                    <div style="font-size:12px; color:#9aa7b7;">Ходовая часть: ${car.broken ? '⚠️ Замена стоек' : '✅ Отлично'}</div>
+                    <div style="font-size:12px; color:#9aa7b7; margin-bottom:4px;">Двигатель: ${car.broken ? '⚠️ Требует переборки (-' + Math.floor(car.repairCost*0.6).toLocaleString() + ' ₸)' : '✅ Обслужен'}</div>
+                    <div style="font-size:12px; color:#9aa7b7;">Ходовая часть: ${car.broken ? '⚠️ Замена стоек (-' + Math.floor(car.repairCost*0.4).toLocaleString() + ' ₸)' : '✅ Отлично'}</div>
                 `;
             }
 
             clone.querySelector('.purchase-text').innerText = `${car.purchasePrice.toLocaleString()} ₸`;
             clone.querySelector('.repair-text').innerText = `${car.repairCost.toLocaleString()} ₸`;
             
+            // Если сломана — цена для перекупов (50%), если починена — полная цена для клиента
             let currentVal = car.broken ? Math.floor(car.sellPrice * 0.5) : car.sellPrice;
             clone.querySelector('.value-text').innerText = `${currentVal.toLocaleString()} ₸`;
             
@@ -343,13 +339,17 @@ function renderGarageViews() {
             const sellBtn = clone.querySelector('.sell-button');
 
             if (car.broken) {
-                diagBtn.innerText = `Починить (-${car.repairCost.toLocaleString()} ₸)`;
+                diagBtn.style.display = "inline-block";
+                diagBtn.innerText = `Починить всё (-${car.repairCost.toLocaleString()} ₸)`;
                 diagBtn.addEventListener('click', () => repairCar(car.instanceId));
+                
                 sellBtn.innerText = "Сдать перекупам";
                 sellBtn.style.background = "#475569";
             } else {
+                // Если починена — убираем кнопку ремонта, а основную перекрашиваем под клиента
                 diagBtn.style.display = "none";
                 sellBtn.innerText = "Продать клиенту";
+                sellBtn.style.background = "#10b981";
             }
 
             sellBtn.addEventListener('click', () => sellCar(car.instanceId));
@@ -389,6 +389,7 @@ async function buyCar(car) {
     await savePlayerProfile();
 }
 
+// ИСПРАВЛЕНО: Теперь машина не пропадает, а меняет статус на починенную
 async function repairCar(instanceId) {
     const car = myGarage.find(c => c.instanceId === instanceId);
     if (!car || !car.broken) return;
@@ -399,15 +400,16 @@ async function repairCar(instanceId) {
     }
 
     playerState.balance -= car.repairCost;
-    car.broken = false;
+    car.broken = false; // Машина теперь ЦЕЛАЯ!
     playerState.xp += 200;
 
     logEvent(`Отремонтирован ${car.name}. Готов к продаже.`);
-    showNotification(`🔧 Ремонт завершен! Получено +200 XP`, "success");
+    showNotification(`🔧 Ремонт завершен! Машина готова к продаже клиенту (+200 XP)`, "success");
     updateUI();
     await savePlayerProfile();
 }
 
+// ИСПРАВЛЕНО: Продажа учитывает, починена машина или сдана перекупам в минус
 async function sellCar(instanceId) {
     const carIndex = myGarage.findIndex(c => c.instanceId === instanceId);
     if (carIndex === -1) return;
@@ -422,9 +424,14 @@ async function sellCar(instanceId) {
     if (profit > 0) playerState.profit_total += profit;
 
     logEvent(`Продан ${car.name} за ${finalPrice.toLocaleString()} ₸.`);
-    showNotification(`💰 Машина продана за ${finalPrice.toLocaleString()} ₸!`, "success");
     
-    myGarage.splice(carIndex, 1);
+    if (car.broken) {
+        showNotification(`Сдан перекупам за ${finalPrice.toLocaleString()} ₸`, "success");
+    } else {
+        showNotification(`💰 Машина успешно продана клиенту за ${finalPrice.toLocaleString()} ₸!`, "success");
+    }
+    
+    myGarage.splice(carIndex, 1); // Удаляем только после продажи
     updateUI();
     await savePlayerProfile();
 }
