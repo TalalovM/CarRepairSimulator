@@ -45,12 +45,15 @@ button {
   cursor: pointer;
 }
 
+/* ИЗМЕНЕНИЕ: добавлен align-items: start для корректной работы sticky */
 .app-layout {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   min-height: 100vh;
+  align-items: start; 
 }
 
+/* ИЗМЕНЕНИЕ: добавлен overflow-y для независимого скролла меню */
 .sidebar {
   position: sticky;
   top: 0;
@@ -58,6 +61,7 @@ button {
   padding: 20px 14px;
   background: rgba(12, 18, 27, 0.96);
   border-right: 1px solid var(--line);
+  overflow-y: auto; 
 }
 
 .logo {
