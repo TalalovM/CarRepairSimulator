@@ -1,3 +1,8 @@
+// НАСТРОЙКА SUPABASE: Вставь сюда свои данные из настроек API Supabase
+const SUPABASE_URL = "https://ycmvhvsbcexxpuzdskpu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ztQr6Kblgt4kb-3R3nhiPg_ctswPZb6";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 const money = new Intl.NumberFormat("ru-RU", {
   maximumFractionDigits: 0
 });
@@ -18,54 +23,58 @@ const systems = {
   body: "Кузов"
 };
 
+// Список автомобилей с добавлением уровней доступа (requiredLevel)
 const cars = [
   {
     id: "mercedes-w201",
     name: "Mercedes-Benz W201",
     year: 1991,
-    mileage: 753428,
+    mileage: 246000,
     price: 500000,
     resale: 735000,
     condition: "poor",
-    image: "assets/mercedes-benz-w201.jpg",
+    requiredLevel: 1, // Доступен сразу
+    image: "assets/camry.svg",
     baseHealth: { engine: 40, suspension: 30, brakes: 50, electric: 20, body: 35 },
     visibleRepairs: [
       { id: "w201-suspension", name: "Ремонт передней подвески", system: "suspension", cost: 47000, impact: 22 },
-      { id: "w201-body", name: "Кузовные работы", system: "body", cost: 57500, impact: 18 }
+      { id: "w201-body", name: "Кузовные работы", system: "body", cost: 40000, impact: 18 }
     ],
     hiddenRepairs: [
-      { id: "w201-engine", name: "Цепь ГРМ и течь масла", system: "engine", cost: 85000, impact: 28 },
-      { id: "w201-electric", name: "Блок предохранителей", system: "electric", cost: 38000, impact: 24 }
+      { id: "w201-engine", name: "Цепь ГРМ и течь масла", system: "engine", cost: 126000, impact: 28 },
+      { id: "w201-electric", name: "Проводка блока предохранителей", system: "electric", cost: 38000, impact: 24 }
     ]
   },
   {
     id: "mercedes-w124",
     name: "Mercedes-Benz W124",
     year: 1994,
-    mileage: 435981,
-    price: 900000,
-    resale: 1175000,
+    mileage: 221000,
+    price: 700000,
+    resale: 875000,
     condition: "fair",
-    image: "assets/mercedes-benz-w124.jpg",
+    requiredLevel: 1,
+    image: "assets/focus.svg",
     baseHealth: { engine: 58, suspension: 45, brakes: 62, electric: 48, body: 54 },
     visibleRepairs: [
-      { id: "w124-brakes", name: "Тормозные диски и колодки", system: "brakes", cost: 50000, impact: 18 },
-      { id: "w124-detail", name: "Полировка кузова", system: "body", cost: 45000, impact: 10 }
+      { id: "w124-brakes", name: "Тормозные диски и колодки", system: "brakes", cost: 39000, impact: 18 },
+      { id: "w124-detail", name: "Полировка кузова", system: "body", cost: 23000, impact: 10 }
     ],
     hiddenRepairs: [
-      { id: "w124-gearbox", name: "Ремонт АКПП", system: "engine", cost: 125000, impact: 24 },
-      { id: "w124-wiring", name: "Плавающая ошибка проводки", system: "electric", cost: 25000, impact: 18 }
+      { id: "w124-gearbox", name: "Ремонт АКПП", system: "engine", cost: 168000, impact: 24 },
+      { id: "w124-wiring", name: "Плавающая ошибка проводки", system: "electric", cost: 46000, impact: 18 }
     ]
   },
   {
     id: "bmw-e30",
     name: "BMW E30",
     year: 1989,
-    mileage: 356254,
+    mileage: 198000,
     price: 650000,
     resale: 930000,
     condition: "good",
-    image: "assets/bmw-e30.jpg",
+    requiredLevel: 2, // ТРЕБУЕТСЯ 2 УРОВЕНЬ
+    image: "assets/civic.svg",
     baseHealth: { engine: 68, suspension: 63, brakes: 66, electric: 55, body: 72 },
     visibleRepairs: [
       { id: "e30-suspension", name: "Сайлентблоки и стойки", system: "suspension", cost: 52000, impact: 18 },
@@ -83,7 +92,8 @@ const cars = [
     price: 480000,
     resale: 650000,
     condition: "fair",
-    image: "assets/audi-a4.jpg",
+    requiredLevel: 1,
+    image: "assets/octavia.svg",
     baseHealth: { engine: 52, suspension: 48, brakes: 61, electric: 44, body: 62 },
     visibleRepairs: [
       { id: "a4-service", name: "Большое ТО", system: "engine", cost: 41000, impact: 16 },
@@ -102,7 +112,8 @@ const cars = [
     price: 430000,
     resale: 610000,
     condition: "fair",
-    image: "assets/volkswagen-golf-5.jpg",
+    requiredLevel: 1,
+    image: "assets/logan.svg",
     baseHealth: { engine: 55, suspension: 52, brakes: 58, electric: 51, body: 60 },
     visibleRepairs: [
       { id: "golf-clutch", name: "Комплект сцепления", system: "engine", cost: 62000, impact: 19 },
@@ -113,21 +124,22 @@ const cars = [
     ]
   },
   {
-    id: "mercedes-w204",
-    name: "Mercedes Benz W204",
+    id: "toyota-camry-v40",
+    name: "Toyota Camry V40",
     year: 2008,
     mileage: 201000,
     price: 820000,
     resale: 1030000,
     condition: "good",
-    image: "assets/mercedes-w204.jpg",
+    requiredLevel: 3, // ТРЕБУЕТСЯ 3 УРОВЕНЬ
+    image: "assets/camry.svg",
     baseHealth: { engine: 70, suspension: 58, brakes: 66, electric: 68, body: 64 },
     visibleRepairs: [
-      { id: "mercedes-w204-service", name: "Плановое ТО", system: "engine", cost: 36000, impact: 12 },
-      { id: "mercedes-w204-glass", name: "Лобовое стекло", system: "body", cost: 31000, impact: 10 }
+      { id: "camry-service", name: "Плановое ТО", system: "engine", cost: 36000, impact: 12 },
+      { id: "camry-glass", name: "Лобовое стекло", system: "body", cost: 31000, impact: 10 }
     ],
     hiddenRepairs: [
-      { id: "mercedes-benz-w204-rack", name: "Рулевая рейка", system: "suspension", cost: 84000, impact: 18 }
+      { id: "camry-rack", name: "Рулевая рейка", system: "suspension", cost: 84000, impact: 18 }
     ]
   },
   {
@@ -138,7 +150,8 @@ const cars = [
     price: 210000,
     resale: 330000,
     condition: "poor",
-    image: "assets/lada-priora.jpg",
+    requiredLevel: 1,
+    image: "assets/priora.svg",
     baseHealth: { engine: 38, suspension: 34, brakes: 43, electric: 28, body: 40 },
     visibleRepairs: [
       { id: "priora-engine", name: "Ремонт двигателя", system: "engine", cost: 68000, impact: 26 },
@@ -157,14 +170,15 @@ const cars = [
     price: 520000,
     resale: 720000,
     condition: "good",
-    image: "assets/honda-civic.jpg",
+    requiredLevel: 2, // ТРЕБУЕТСЯ 2 УРОВЕНЬ
+    image: "assets/civic.svg",
     baseHealth: { engine: 72, suspension: 62, brakes: 61, electric: 70, body: 68 },
     visibleRepairs: [
-      { id: "honda-civic-paint", name: "Окрас бампера", system: "body", cost: 33000, impact: 10 },
-      { id: "chonda-civic-brakes", name: "Передние тормоза", system: "brakes", cost: 27000, impact: 14 }
+      { id: "civic-paint", name: "Окрас бампера", system: "body", cost: 33000, impact: 10 },
+      { id: "civic-brakes", name: "Передние тормоза", system: "brakes", cost: 27000, impact: 14 }
     ],
     hiddenRepairs: [
-      { id: "honda-civic-sensors", name: "Датчики ABS", system: "electric", cost: 29000, impact: 12 }
+      { id: "civic-sensors", name: "Датчики ABS", system: "electric", cost: 29000, impact: 12 }
     ]
   }
 ];
@@ -175,16 +189,12 @@ const initialEvents = [
   { type: "good", title: "Скидка на детали", text: "Чем выше репутация, тем легче выходить в плюс.", time: "Сегодня" }
 ];
 
-const ratingRows = [
-  ["1", "ГаражМечты", "12", "2 450 000 ₸"],
-  ["2", "TurboMaster", "10", "1 870 500 ₸"],
-  ["3", "АвтоЭксперт", "9", "1 560 000 ₸"],
-  ["4", "Механик007", "8", "1 230 000 ₸"],
-  ["5", "SpeedHunter", "7", "980 000 ₸"]
-];
+let globalRating = []; // Сюда загрузим реальный топ из Supabase
+let currentUserSession = null;
 
 const initialState = {
   version: 3,
+  username: "Механик",
   balance: 1245000,
   xp: 560,
   reputation: 75,
@@ -197,7 +207,7 @@ const initialState = {
   events: initialEvents
 };
 
-let state = loadState();
+let state = clone(initialState);
 
 const elements = {
   balanceText: document.querySelector("#balanceText"),
@@ -205,6 +215,8 @@ const elements = {
   reputationText: document.querySelector("#reputationText"),
   soldText: document.querySelector("#soldText"),
   levelText: document.querySelector("#levelText"),
+  profileName: document.querySelector("#profileName"),
+  avatarLetter: document.querySelector("#avatarLetter"),
   searchInput: document.querySelector("#searchInput"),
   conditionFilter: document.querySelector("#conditionFilter"),
   dealFilter: document.querySelector("#dealFilter"),
@@ -220,56 +232,220 @@ const elements = {
   homeRatingList: document.querySelector("#homeRatingList"),
   toast: document.querySelector("#toast"),
   menuButton: document.querySelector("#menuButton"),
-  scrim: document.querySelector("#scrim")
+  scrim: document.querySelector("#scrim"),
+  // Элементы авторизации
+  authOverlay: document.querySelector("#authOverlay"),
+  authForm: document.querySelector("#authForm"),
+  authTitle: document.querySelector("#authTitle"),
+  authDesc: document.querySelector("#authDesc"),
+  authUsername: document.querySelector("#authUsername"),
+  usernameLabel: document.querySelector("#usernameLabel"),
+  authEmail: document.querySelector("#authEmail"),
+  authPassword: document.querySelector("#authPassword"),
+  authSubmitBtn: document.querySelector("#authSubmitBtn"),
+  authToggleType: document.querySelector("#authToggleType"),
+  logoutButton: document.querySelector("#logoutButton")
 };
 
+// Переключатель типа авторизации (Вход / Регистрация)
+let isSignUpMode = true;
+elements.authToggleType.addEventListener("click", () => {
+  isSignUpMode = !isSignUpMode;
+  if (isSignUpMode) {
+    elements.authTitle.textContent = "Регистрация мастера";
+    elements.authDesc.textContent = "Создайте аккаунт, чтобы попасть в облачный рейтинг механиков.";
+    elements.usernameLabel.style.display = "flex";
+    elements.authUsername.required = true;
+    elements.authSubmitBtn.textContent = "Зарегистрироваться";
+    elements.authToggleType.textContent = "Уже есть аккаунт? Войти";
+  } else {
+    elements.authTitle.textContent = "Вход в мастерскую";
+    elements.authDesc.textContent = "Войдите, чтобы восстановить свой прогресс и рейтинг.";
+    elements.usernameLabel.style.display = "none";
+    elements.authUsername.required = false;
+    elements.authSubmitBtn.textContent = "Войти";
+    elements.authToggleType.textContent = "Нет аккаунта? Зарегистрироваться";
+  }
+});
+
+// Слушатели событий интерфейса
 document.querySelectorAll("[data-view]").forEach((button) => {
   button.addEventListener("click", () => switchView(button.dataset.view));
 });
-
 document.querySelectorAll("[data-switch]").forEach((button) => {
   button.addEventListener("click", () => switchView(button.dataset.switch));
 });
-
 document.querySelectorAll("#resetButton").forEach((button) => {
   button.addEventListener("click", resetGame);
 });
-
 document.querySelector("#newDealsButton").addEventListener("click", refreshMarket);
 elements.searchInput.addEventListener("input", renderMarket);
 elements.conditionFilter.addEventListener("change", renderMarket);
 elements.dealFilter.addEventListener("change", renderMarket);
 elements.menuButton.addEventListener("click", () => document.body.classList.add("menu-open"));
 elements.scrim.addEventListener("click", () => document.body.classList.remove("menu-open"));
+elements.logoutButton.addEventListener("click", handleLogout);
+elements.authForm.addEventListener("submit", handleAuthSubmit);
 
-render();
+// Инициализация авторизации при загрузке страницы
+initAuth();
 
-function loadState() {
-  const saved = localStorage.getItem(storageKey);
+async function initAuth() {
+  // Проверяем текущую сессию
+  const { data: { session } } = await supabase.auth.getSession();
+  handleAuthState(session);
 
-  if (!saved) {
-    return clone(initialState);
+  // Слушаем изменения авторизации (вход/выход)
+  supabase.auth.onAuthStateChange((_event, session) => {
+    handleAuthState(session);
+  });
+}
+
+async function handleAuthState(session) {
+  if (session) {
+    currentUserSession = session;
+    elements.authOverlay.style.display = "none";
+    await loadUserProfile(session.user.id);
+    fetchGlobalRating();
+  } else {
+    currentUserSession = null;
+    elements.authOverlay.style.display = "flex";
   }
+}
 
+async function loadUserProfile(userId) {
   try {
-    const parsed = JSON.parse(saved);
-    if (parsed.version !== initialState.version) return clone(initialState);
-    return { ...clone(initialState), ...parsed };
-  } catch {
-    return clone(initialState);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error && error.code === 'PGRST116') {
+      // Профиль в базе еще не создан
+      state = clone(initialState);
+      state.username = elements.authUsername.value || "Механик";
+      await saveStateToCloud();
+    } else if (data) {
+      // Загружаем данные из облака Supabase
+      state.username = data.username;
+      state.balance = data.balance;
+      state.xp = data.xp;
+      state.reputation = data.reputation;
+      state.soldCount = data.sold_count;
+      state.profitTotal = data.profit_total;
+      
+      // Локальные структуры гаража можно подгрузить из localStorage
+      const local = localStorage.getItem(storageKey + "_" + userId);
+      if (local) {
+        const parsed = JSON.parse(local);
+        state.garage = parsed.garage || [];
+        state.usedCarIds = parsed.usedCarIds || [];
+        state.events = parsed.events || initialEvents;
+      }
+    }
+  } catch (err) {
+    console.error("Ошибка загрузки профиля:", err);
   }
+  render();
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+  const email = elements.authEmail.value;
+  const password = elements.authPassword.value;
+  const username = elements.authUsername.value;
+
+  if (isSignUpMode) {
+    // Регистрация
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      alert("Ошибка регистрации: " + error.message);
+    } else if (data.user) {
+      // Принудительно заносим имя в профиль
+      await supabase.from('profiles').insert([
+        { id: data.user.id, username: username, balance: initialState.balance, xp: initialState.xp }
+      ]);
+      showToast("Успешная регистрация!");
+    }
+  } else {
+    // Вход
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      alert("Ошибка входа: " + error.message);
+    } else {
+      showToast("С возвращением!");
+    }
+  }
+}
+
+async function handleLogout() {
+  await supabase.auth.signOut();
+  localStorage.removeItem(storageKey);
+  location.reload();
 }
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function saveState() {
-  localStorage.setItem(storageKey, JSON.stringify(state));
+// Измененная функция сохранения — теперь она пишет и локально, и в облако Supabase
+async function saveState() {
+  if (!currentUserSession) return;
+  const userId = currentUserSession.user.id;
+  
+  // Локальный кэш структур
+  localStorage.setItem(storageKey + "_" + userId, JSON.stringify({
+    garage: state.garage,
+    usedCarIds: state.usedCarIds,
+    events: state.events
+  }));
+
+  await saveStateToCloud();
+}
+
+async function saveStateToCloud() {
+  if (!currentUserSession) return;
+  const userId = currentUserSession.user.id;
+
+  await supabase
+    .from('profiles')
+    .upsert({
+      id: userId,
+      username: state.username,
+      balance: state.balance,
+      xp: state.xp,
+      reputation: state.reputation,
+      sold_count: state.soldCount,
+      profit_total: state.profitTotal
+    });
+}
+
+// Загрузка живого рейтинга реальных людей из БД
+async function fetchGlobalRating() {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('username, xp, profit_total')
+    .order('profit_total', { ascending: false })
+    .limit(10);
+
+  if (!error && data) {
+    globalRating = data.map((player, index) => [
+      String(index + 1),
+      player.username,
+      String(Math.max(1, Math.floor(player.xp / 200) + 1)),
+      formatMoney(player.profit_total)
+    ]);
+    renderRating();
+  }
 }
 
 function formatMoney(value) {
   return `${money.format(value)} ₸`;
+}
+
+function getPlayerLevel() {
+  return Math.max(1, Math.floor(state.xp / 200) + 1);
 }
 
 function render() {
@@ -277,7 +453,11 @@ function render() {
   elements.xpText.textContent = `${state.xp} / 1000`;
   elements.reputationText.textContent = `${state.reputation}%`;
   elements.soldText.textContent = String(state.soldCount);
-  elements.levelText.textContent = `Уровень ${Math.max(1, Math.floor(state.xp / 200) + 1)}`;
+  
+  const currentLevel = getPlayerLevel();
+  elements.levelText.textContent = `Уровень ${currentLevel}`;
+  elements.profileName.textContent = state.username;
+  elements.avatarLetter.textContent = state.username.charAt(0).toUpperCase();
 
   renderMarket();
   renderHomeMarket();
@@ -326,10 +506,20 @@ function renderHomeMarket() {
 }
 
 function getAvailableCars() {
-  const unavailable = new Set([...state.usedCarIds, ...state.garage.map((car) => car.id)]);
-  const available = cars.filter((car) => !unavailable.has(car.id));
-  const offset = available.length ? state.marketSeed % available.length : 0;
-  return [...available.slice(offset), ...available.slice(0, offset)];
+  const unavailable = new Set([
+    ...state.usedCarIds,
+    ...state.garage.map(car => car.id)
+  ]);
+
+  const available = cars.filter(
+    car => !unavailable.has(car.id)
+  );
+
+  return shuffle([...available]).slice(0, 9);
+}
+
+function shuffle(array) {
+  return array.sort(() => Math.random() - 0.5);
 }
 
 function createMarketCard(car, compact = false) {
@@ -357,10 +547,23 @@ function createMarketCard(car, compact = false) {
   visibleCost.textContent = formatMoney(getVisibleRepairCost(car));
   forecastText.textContent = formatMoney(visibleForecast);
   forecastText.classList.add(visibleForecast >= 0 ? "profit-positive" : "profit-negative");
-  riskText.textContent = realForecast < 0
-    ? "Есть риск минуса после полной диагностики."
-    : "По объявлению выглядит перспективно, но диагностика всё решит.";
-  button.disabled = state.balance < car.price;
+  
+  // Добавляем логику ограничений по уровню
+  const currentLevel = getPlayerLevel();
+  const isLevelLocked = car.requiredLevel && currentLevel < car.requiredLevel;
+
+  if (isLevelLocked) {
+    riskText.textContent = `🔒 Доступно только с уровня ${car.requiredLevel}. Повышайте опыт, ремонтируя другие авто!`;
+    riskText.style.color = "#e15d64";
+    button.disabled = true;
+    button.textContent = `Нужен ур. ${car.requiredLevel}`;
+  } else {
+    riskText.textContent = realForecast < 0
+      ? "Есть риск минуса после полной диагностики."
+      : "По объявлению выглядит перспективно, но диагностика всё решит.";
+    button.disabled = state.balance < car.price;
+  }
+
   button.addEventListener("click", () => buyCar(car.id));
 
   if (compact) {
@@ -481,14 +684,13 @@ function createEventItem(event) {
 }
 
 function renderRating() {
-  const rows = [
-    ...ratingRows,
-    ["6", "Вы", String(Math.max(1, Math.floor(state.xp / 200) + 1)), formatMoney(state.profitTotal)]
-  ];
   elements.ratingList.innerHTML = "";
   elements.homeRatingList.innerHTML = "";
-  rows.forEach((row) => elements.ratingList.append(createRatingRow(row)));
-  rows.slice(0, 5).forEach((row) => elements.homeRatingList.append(createRatingRow(row)));
+  
+  const displayRating = globalRating.length > 0 ? globalRating : [["-", "Загрузка онлайн-топа...", "-", "0 ₸"]];
+  
+  displayRating.forEach((row) => elements.ratingList.append(createRatingRow(row)));
+  displayRating.slice(0, 5).forEach((row) => elements.homeRatingList.append(createRatingRow(row)));
 }
 
 function createRatingRow(row) {
@@ -578,7 +780,9 @@ function sellCar(carId) {
   state.reputation = clamp(state.reputation + (profit >= 0 ? 3 : -6), 20, 100);
   state.garage = state.garage.filter((item) => item.id !== carId);
   addEvent(profit >= 0 ? "good" : "danger", `Продажа ${car.name}`, `Цена ${formatMoney(salePrice)}, итог ${formatMoney(profit)}.`);
+  
   commit(profit >= 0 ? `Сделка закрыта в плюс: ${formatMoney(profit)}.` : `Сделка ушла в минус: ${formatMoney(profit)}.`);
+  fetchGlobalRating(); // Обновляем топ после продажи
 }
 
 function calculateCurrentValue(car, ownedCar) {
@@ -659,10 +863,11 @@ function refreshMarket() {
   showToast("Порядок лотов обновлён. Машины не дублируются.");
 }
 
-function resetGame() {
+async function resetGame() {
   if (!confirm("Начать новую игру и очистить текущий прогресс?")) return;
   state = clone(initialState);
-  saveState();
+  state.username = elements.profileName.textContent;
+  await saveState();
   render();
   switchView("home");
   showToast("Новая игра началась.");
