@@ -2,8 +2,10 @@
 const SUPABASE_URL = "https://ycmvhvsbcexxpuzdskpu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ztQr6Kblgt4kb-3R3nhiPg_ctswPZb6";
 
-// Инициализируем клиент под уникальным именем, чтобы избежать конфликтов в браузере
-const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Защита от повторного объявления переменной в браузере
+if (!window.supabaseClient) {
+    window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
 
 // 2. ИГРОВОЕ СОСТОЯНИЕ (ДАННЫЕ ИГРОКА)
 let playerState = {
@@ -16,25 +18,23 @@ let playerState = {
     profit_total: 0
 };
 
-// Бутафорский список машин для демонстрации рынка и гаража
-const carMarket = [
-    { id: 1, name: "BMW E30", price: 650000, repairCost: 150000, sellPrice: 1100000, broken: true },
-    { id: 2, name: "Toyota Camry V40", price: 1200000, repairCost: 200000, sellPrice: 1800000, broken: true }
-];
-let myGarage = [];
+let myGarage = []; // Здесь будут хранить купленные машины
 
 // 3. СТАРТ ПРИЛОЖЕНИЯ И ПРОВЕРКА АВТОРИЗАЦИИ
 document.addEventListener("DOMContentLoaded", async () => {
     initNavigation();
     initAuthDOM();
     
-    // Проверяем, вошел ли уже какой-то пользователь
-    const { data: { session }, error } = await supabaseClient.auth.getSession();
-    
-    if (session && session.user) {
-        playerState.id = session.user.id;
-        await loadPlayerProfile();
-    } else {
+    try {
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+        if (session && session.user) {
+            playerState.id = session.user.id;
+            await loadPlayerProfile();
+        } else {
+            showAuthModal();
+        }
+    } catch (e) {
+        console.log("Ожидание авторизации...");
         showAuthModal();
     }
     
@@ -42,17 +42,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     setupGameEventListeners();
 });
 
-// 4. РАБОТА С БАЗОЙ ДАННЫХ (ПРОФИЛИ)
+// 4. РАБОТА С БАЗОЙ ДАННЫХ
 async function loadPlayerProfile() {
     try {
-        let { data: profile, error } = await supabaseClient
+        let { data: profile, error } = await window.supabaseClient
             .from('profiles')
             .select('*')
             .eq('id', playerState.id)
             .single();
 
         if (error && error.code === 'PGRST116') {
-            // Если профиль в таблице еще не создан, создаем его с дефолтными значениями
             await createPlayerProfile(playerState.username);
         } else if (profile) {
             playerState.username = profile.username;
@@ -69,7 +68,7 @@ async function loadPlayerProfile() {
 }
 
 async function createPlayerProfile(username) {
-    const { error } = await supabaseClient
+    const { error } = await window.supabaseClient
         .from('profiles')
         .insert([{ 
             id: playerState.id, 
@@ -80,14 +79,11 @@ async function createPlayerProfile(username) {
             sold_count: playerState.sold_count,
             profit_total: playerState.profit_total
         }]);
-    
-    if (error) console.error("Ошибка создания профиля:", error);
 }
 
 async function savePlayerProfile() {
     if (!playerState.id) return;
-    
-    const { error } = await supabaseClient
+    await window.supabaseClient
         .from('profiles')
         .update({
             balance: playerState.balance,
@@ -97,29 +93,32 @@ async function savePlayerProfile() {
             profit_total: playerState.profit_total
         })
         .eq('id', playerState.id);
-        
-    if (error) console.error("Ошибка сохранения данных в облако:", error);
 }
 
-// 5. ИНТЕРФЕЙС И НАВИГАЦИЯ
+// 5. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
 function updateUI() {
-    // Обновление верхней панели (Индикаторы)
-    const balanceEl = document.querySelector('.stats-container .stat-card:nth-child(1) span') || document.getElementById('player-balance');
-    const xpEl = document.querySelector('.stats-container .stat-card:nth-child(2) span') || document.getElementById('player-xp');
-    const repEl = document.querySelector('.stats-container .stat-card:nth-child(3) span') || document.getElementById('player-reputation');
-    const soldEl = document.querySelector('.stats-container .stat-card:nth-child(4) span') || document.getElementById('player-sold');
-    const levelEl = document.querySelector('.stats-container .stat-card:nth-child(5) span') || document.getElementById('player-level');
+    // Безопасное обновление элементов (если элемент есть в HTML - обновляем, если нет - код не падает)
+    const setTxt = (selector, val) => {
+        const el = document.querySelector(selector);
+        if (el) el.innerText = val;
+    };
 
-    if (balanceEl) balanceEl.innerText = `${playerState.balance.toLocaleString()} ₸`;
-    if (xpEl) xpEl.innerText = `${playerState.xp} / 1000`;
-    if (repEl) repEl.innerText = `${playerState.reputation}%`;
-    if (soldEl) soldEl.innerText = playerState.sold_count;
-    if (levelEl) {
-        const currentLevel = Math.floor(playerState.xp / 500) + 1;
-        levelEl.innerText = `${playerState.username} (Ур. ${currentLevel})`;
-    }
+    setTxt('.stats-container .stat-card:nth-child(1) span', `${playerState.balance.toLocaleString()} ₸`);
+    setTxt('#player-balance', `${playerState.balance.toLocaleString()} ₸`);
     
-    renderMarket();
+    setTxt('.stats-container .stat-card:nth-child(2) span', `${playerState.xp} / 1000`);
+    setTxt('#player-xp', `${playerState.xp} / 1000`);
+    
+    setTxt('.stats-container .stat-card:nth-child(3) span', `${playerState.reputation}%`);
+    setTxt('#player-reputation', `${playerState.reputation}%`);
+    
+    setTxt('.stats-container .stat-card:nth-child(4) span', playerState.sold_count);
+    setTxt('#player-sold', playerState.sold_count);
+    
+    const currentLevel = Math.floor(playerState.xp / 500) + 1;
+    setTxt('.stats-container .stat-card:nth-child(5) span', `${playerState.username} (Ур. ${currentLevel})`);
+    setTxt('#player-level', `${playerState.username} (Ур. ${currentLevel})`);
+    
     renderGarage();
 }
 
@@ -129,8 +128,6 @@ function initNavigation() {
         item.addEventListener('click', () => {
             navItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
-            
-            // Если перешли на вкладку рейтинг — обновляем его из БД
             if (item.innerText.includes('Рейтинг') || item.getAttribute('data-tab') === 'rating') {
                 loadLeaderboard();
             }
@@ -138,17 +135,135 @@ function initNavigation() {
     });
 }
 
-// 6. АВТОРИЗАЦИЯ (ОКНО РЕГИСТРАЦИИ)
-function initAuthDOM() {
-    // Если модалки нет в HTML, создаем ее динамически
-    if (document.getElementById('auth-modal')) return;
+// 6. УМНЫЕ ИГРОВЫЕ СОБЫТИЯ (ЧИТАЮТ ДАННЫЕ ИЗ ТВОЕГО HTML)
+function setupGameEventListeners() {
+    document.body.addEventListener('click', async (e) => {
+        
+        // Кнопка ПОКУПКИ машины
+        if (e.target.classList.contains('buy-car-btn')) {
+            // Код сам смотрит на атрибуты кнопки, которую ты нажал в HTML!
+            const carName = e.target.getAttribute('data-name') || "BMW E30";
+            const carPrice = parseInt(e.target.getAttribute('data-price')) || 650000;
+            const repairCost = parseInt(e.target.getAttribute('data-repair')) || 150000;
+            const sellPrice = parseInt(e.target.getAttribute('data-sell')) || 1100000;
 
+            if (playerState.balance >= carPrice) {
+                playerState.balance -= carPrice;
+                myGarage.push({
+                    instanceId: Date.now(),
+                    name: carName,
+                    price: carPrice,
+                    repairCost: repairCost,
+                    sellPrice: sellPrice,
+                    broken: true
+                });
+                alert(`Вы купили ${carName}! Машина доставлена в гараж.`);
+                updateUI();
+                await savePlayerProfile();
+            } else {
+                alert("Недостаточно денег!");
+            }
+        }
+
+        // Кнопка ПОЧИНКИ машины
+        if (e.target.classList.contains('repair-car-btn')) {
+            const instanceId = parseInt(e.target.getAttribute('data-instance-id'));
+            const car = myGarage.find(c => c.instanceId === instanceId);
+            if (car && car.broken) {
+                if (playerState.balance >= car.repairCost) {
+                    playerState.balance -= car.repairCost;
+                    car.broken = false;
+                    playerState.xp += 150;
+                    alert(`Ремонт ${car.name} завершен! (+150 XP)`);
+                    updateUI();
+                    await savePlayerProfile();
+                } else {
+                    alert("Недостаточно денег на запчасти!");
+                }
+            }
+        }
+
+        // Кнопка ПРОДАЖИ машины
+        if (e.target.classList.contains('sell-car-btn')) {
+            const instanceId = parseInt(e.target.getAttribute('data-instance-id'));
+            const carIndex = myGarage.findIndex(c => c.instanceId === instanceId);
+            if (carIndex !== -1) {
+                const car = myGarage[carIndex];
+                let finalPrice = car.broken ? Math.floor(car.sellPrice * 0.5) : car.sellPrice;
+                
+                playerState.balance += finalPrice;
+                playerState.sold_count += 1;
+                
+                let profit = finalPrice - car.price;
+                if (!car.broken) profit -= car.repairCost;
+                if (profit > 0) playerState.profit_total += profit;
+
+                alert(`Машина ${car.name} продана за ${finalPrice.toLocaleString()} ₸!`);
+                myGarage.splice(carIndex, 1);
+                updateUI();
+                await savePlayerProfile();
+            }
+        }
+    });
+}
+
+// 7. ОТРИСОВКА ГАРАЖА И ЛИДЕРБОРДА
+function renderGarage() {
+    const garageContainer = document.getElementById('garage-list') || document.querySelector('.garage-container');
+    if (!garageContainer) return;
+    
+    if (myGarage.length === 0) {
+        garageContainer.innerHTML = '<p style="color:#64748b; text-align:center; padding:20px;">В гараже пусто. Купите машину на рынке!</p>';
+        return;
+    }
+    garageContainer.innerHTML = myGarage.map(car => `
+        <div style="background:#1e293b; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; color:#fff;">
+            <div>
+                <strong>${car.name}</strong> 
+                <span style="color:${car.broken ? '#ef4444' : '#10b981'}; font-size:12px; margin-left:10px;">
+                    [${car.broken ? 'Требует ремонт' : 'Готова к продаже'}]
+                </span><br>
+                <span style="color:#94a3b8; font-size:13px;">Выкупят за: ${(car.broken ? Math.floor(car.sellPrice*0.5) : car.sellPrice).toLocaleString()} ₸</span>
+            </div>
+            <div>
+                ${car.broken ? `<button class="repair-car-btn" data-instance-id="${car.instanceId}" style="background:#eab308; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; margin-right:5px; font-weight:bold;">Починить (${car.repairCost.toLocaleString()} ₸)</button>` : ''}
+                <button class="sell-car-btn" data-instance-id="${car.instanceId}" style="background:#10b981; border:none; padding:6px 12px; border-radius:5px; color:#fff; cursor:pointer;">Продать</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadLeaderboard() {
+    try {
+        const { data: topPlayers, error } = await window.supabaseClient
+            .from('profiles')
+            .select('username, profit_total')
+            .order('profit_total', { ascending: false })
+            .limit(10);
+
+        if (error) return;
+
+        const leaderboardContainer = document.querySelector('.rating-table-body') || document.getElementById('leaderboard');
+        if (leaderboardContainer) {
+            leaderboardContainer.innerHTML = topPlayers.map((p, index) => `
+                <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #334155; color:#fff;">
+                    <span>${index + 1}. 🌟 ${p.username}</span>
+                    <span style="font-weight:bold; color:#10b981;">+${p.profit_total.toLocaleString()} ₸</span>
+                </div>
+            `).join('');
+        }
+    } catch(e){}
+}
+
+// 8. ДИНАМИЧЕСКАЯ ОКНО АВТОРИЗАЦИИ
+function initAuthDOM() {
+    if (document.getElementById('auth-modal')) return;
     const modalHtml = `
-        <div id="auth-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,14,23,0.95);display:flex;justify-content:center;align-items:center;z-index:9999;font-family:sans-serif;">
-            <div style="background:#1e293b;padding:30px;border-radius:12px;width:340px;box-shadow:0 10px 25px rgba(0,0,0,0.5);color:#fff;">
-                <h3 id="auth-title" style="margin-top:0;margin-bottom:20px;text-align:center;font-size:22px;color:#3b82f6;">Регистрация мастера</h3>
+        <div id="auth-modal" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(10,14,23,0.95);display:flex;justify-content:center;align-items:center;z-index:9999;">
+            <div style="background:#1e293b;padding:30px;border-radius:12px;width:340px;color:#fff;font-family:sans-serif;">
+                <h3 id="auth-title" style="margin-top:0;margin-bottom:20px;text-align:center;color:#3b82f6;">Регистрация мастера</h3>
                 <div style="margin-bottom:15px;">
-                    <label style="display:block;margin-bottom:5px;font-size:14px;color:#94a3b8;">Имя мастера (Никнейм)</label>
+                    <label style="display:block;margin-bottom:5px;font-size:14px;color:#94a3b8;">Имя (Никнейм)</label>
                     <input type="text" id="auth-username" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#fff;box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom:15px;">
@@ -156,7 +271,7 @@ function initAuthDOM() {
                     <input type="email" id="auth-email" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#fff;box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;margin-bottom:5px;font-size:14px;color:#94a3b8;">Пароль (мин. 6 симв.)</label>
+                    <label style="display:block;margin-bottom:5px;font-size:14px;color:#94a3b8;">Пароль</label>
                     <input type="password" id="auth-password" style="width:100%;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#fff;box-sizing:border-box;">
                 </div>
                 <button id="auth-submit-btn" style="width:100%;padding:12px;background:#3b82f6;border:none;border-radius:6px;color:#fff;font-weight:bold;cursor:pointer;margin-bottom:12px;">Создать профиль</button>
@@ -176,17 +291,10 @@ function initAuthDOM() {
 
     toggleText.addEventListener('click', () => {
         isSignUpMode = !isSignUpMode;
-        if (isSignUpMode) {
-            title.innerText = "Регистрация мастера";
-            usernameBlock.style.display = "block";
-            submitBtn.innerText = "Создать профиль";
-            toggleText.innerText = "Уже есть аккаунт? Войти";
-        } else {
-            title.innerText = "Вход в мастерскую";
-            usernameBlock.style.display = "none";
-            submitBtn.innerText = "Войти в игру";
-            toggleText.innerText = "Нет аккаунта? Зарегистрироваться";
-        }
+        title.innerText = isSignUpMode ? "Регистрация мастера" : "Вход в мастерскую";
+        usernameBlock.style.display = isSignUpMode ? "block" : "none";
+        submitBtn.innerText = isSignUpMode ? "Создать профиль" : "Войти в игру";
+        toggleText.innerText = isSignUpMode ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться";
         errorEl.style.display = "none";
     });
 
@@ -194,100 +302,26 @@ function initAuthDOM() {
         const email = document.getElementById('auth-email').value.trim();
         const password = document.getElementById('auth-password').value.trim();
         const username = document.getElementById('auth-username').value.trim();
-
         errorEl.style.display = "none";
 
-        if (!email || !password) {
-            errorEl.innerText = "Заполните Email и Пароль!";
-            errorEl.style.display = "block";
-            return;
-        }
+        if (!email || !password) return;
 
         if (isSignUpMode) {
-            if (!username) {
-                errorEl.innerText = "Введите имя мастера!";
-                errorEl.style.display = "block";
-                return;
-            }
-            // Регистрация нового аккаунта
-            const { data, error } = await supabaseClient.auth.signUp({ email, password });
-            if (error) {
-                errorEl.innerText = error.message;
-                errorEl.style.display = "block";
-            } else if (data.user) {
-                playerState.id = data.user.id;
-                playerState.username = username;
-                await createPlayerProfile(username);
-                hideAuthModal();
-                updateUI();
+            if (!username) return;
+            const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
+            if (error) { errorEl.innerText = error.message; errorEl.style.display = "block"; }
+            else if (data.user) {
+                playerState.id = data.user.id; playerState.username = username;
+                await createPlayerProfile(username); hideAuthModal(); updateUI();
             }
         } else {
-            // Логин существующего аккаунта
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) {
-                errorEl.innerText = error.message;
-                errorEl.style.display = "block";
-            } else if (data.user) {
-                playerState.id = data.user.id;
-                await loadPlayerProfile();
-                hideAuthModal();
-                updateUI();
+            const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) { errorEl.innerText = error.message; errorEl.style.display = "block"; }
+            else if (data.user) {
+                playerState.id = data.user.id; await loadPlayerProfile(); hideAuthModal(); updateUI();
             }
         }
     });
 }
-
 function showAuthModal() { document.getElementById('auth-modal').style.display = 'flex'; }
 function hideAuthModal() { document.getElementById('auth-modal').style.display = 'none'; }
-
-// 7. ЛОГИКА ТАБЛИЦЫ ЛИДЕРОВ (РЕЙТИНГ)
-async function loadLeaderboard() {
-    const { data: topPlayers, error } = await supabaseClient
-        .from('profiles')
-        .select('username, profit_total, level, reputation')
-        .order('profit_total', { ascending: false })
-        .limit(10);
-
-    if (error) {
-        console.error("Ошибка загрузки рейтинга:", error);
-        return;
-    }
-
-    // Ищем блок или таблицу рейтинга на странице и заполняем её
-    const leaderboardContainer = document.querySelector('.rating-table-body') || document.getElementById('leaderboard');
-    if (leaderboardContainer) {
-        leaderboardContainer.innerHTML = topPlayers.map((p, index) => `
-            <div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #334155; background:${index === 0 ? 'rgba(234,179,8,0.1)' : 'transparent'}">
-                <span>${index + 1}. 🌟 ${p.username}</span>
-                <span style="font-weight:bold; color:#10b981;">+${p.profit_total.toLocaleString()} ₸</span>
-            </div>
-        `).join('');
-    }
-}
-
-// 8.ИГРОВЫЕ ДЕЙСТВИЯ (ОЖИВЛЕНИЕ КНОПОК)
-function setupGameEventListeners() {
-    // Делегирование событий кликов по кнопкам рынка и гаража
-    document.body.addEventListener('click', async (e) => {
-        if (e.target.classList.contains('buy-car-btn')) {
-            const carId = parseInt(e.target.getAttribute('data-id'));
-            const car = carMarket.find(c => c.id === carId);
-            if (car && playerState.balance >= car.price) {
-                playerState.balance -= car.price;
-                myGarage.push({ ...car, instanceId: Date.now() });
-                alert(`Вы купили ${car.name}! Машина добавлена в гараж.`);
-                updateUI();
-                await savePlayerProfile();
-            } else {
-                alert("Недостаточно денег на балансе!");
-            }
-        }
-
-        if (e.target.classList.contains('repair-car-btn')) {
-            const instanceId = parseInt(e.target.getAttribute('data-instance-id'));
-            const car = myGarage.find(c => c.instanceId === instanceId);
-            if (car && car.broken) {
-                if (playerState.balance >= car.repairCost) {
-                    playerState.balance -= car.repairCost;
-                    car.broken = false;
-                    playerState.xp += 150; // Даем опыт за ремонт
