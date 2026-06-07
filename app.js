@@ -1,4 +1,4 @@
-// 1. НАСТРОЙКА ПОДКЛЮЧЕНИЯ К SUPABASE
+// 1. НАСТРОЙКА SUPABASE
 const SUPABASE_URL = "https://ycmvhvsbcexxpuzdskpu.supabase.co";
 const SUPABASE_KEY = "sb_publishable_ztQr6Kblgt4kb-3R3nhiPg_ctswPZb6";
 
@@ -10,14 +10,14 @@ if (!window.supabaseClient) {
 let playerState = {
     id: null,
     username: "Мастер",
-    balance: 1245000,
-    xp: 560,
-    reputation: 75,
+    balance: 1500000, // Стартовый баланс (1.5 млн ₸)
+    xp: 0,
+    reputation: 100,
     sold_count: 0,
     profit_total: 0
 };
 
-// ТВОЙ ОФИЦИАЛЬНЫЙ СПИСОК МАШИН
+// Твой массив шаблонов машин
 const carTemplates = [
   { id: "audi-a4", name: "Audi A4 B6", year: 2003, basePrice: 900000, resaleMult: 1.35, image: "assets/audi-a4.jpg" },
   { id: "bmw-e30", name: "BMW E30 (Classic)", year: 1989, basePrice: 650000, resaleMult: 1.45, image: "assets/bmw-e30.jpg" },
@@ -28,20 +28,22 @@ const carTemplates = [
   { id: "mercedes-w124", name: "Mercedes-Benz W124", year: 1994, basePrice: 700000, resaleMult: 1.45, image: "assets/mercedes-benz-w124.jpg" },
   { id: "mercedes-w201", name: "Mercedes-Benz W201", year: 1991, basePrice: 500000, resaleMult: 1.50, image: "assets/mercedes-benz-w201.jpg" },
   { id: "mercedes-w211", name: "Mercedes-Benz W211", year: 2004, basePrice: 900000, resaleMult: 1.32, image: "assets/mercedes-benz-w211.jpg" },
-  { id: "mercedes-w204", name: "Mercedes-Benz W204", year: 2011, basePrice: 1100000, resaleMult: 1.28, image: "assets/mercedes-Цw204.jpg" }, // сохранил твою опечатку в пути Цw204, чтобы картинка не ломалась
+  { id: "mercedes-w204", name: "Mercedes-Benz W204", year: 2011, basePrice: 1100000, resaleMult: 1.28, image: "assets/mercedes-Цw204.jpg" },
   { id: "toyota-mark-2", name: "Toyota Mark II", year: 1998, basePrice: 950000, resaleMult: 1.42, image: "assets/toyota-mark-2.jpg" },
   { id: "volkswagen-golf-5", name: "VW Golf V", year: 2007, basePrice: 950000, resaleMult: 1.34, image: "assets/volkswagen-golf-5.jpg" }
 ];
 
-let myGarage = []; 
+let myGarage = [];
 
-// 3. СТАРТ ПРИЛОЖЕНИЯ
+// 3. ИНИЦИАЛИЗАЦИЯ ИГРЫ
 document.addEventListener("DOMContentLoaded", async () => {
     initNavigation();
-    initAuthDOM();
+    initAuth();
+    initFilters();
+    setupExtraButtons();
     
     try {
-        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
+        const { data: { session } } = await window.supabaseClient.auth.getSession();
         if (session && session.user) {
             playerState.id = session.user.id;
             await loadPlayerProfile();
@@ -53,10 +55,331 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     
     updateUI();
-    setupGameEventListeners();
 });
 
-// 4. БАЗА ДАННЫХ
+// 4. СИСТЕМА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК (VIEWS)
+function initNavigation() {
+    const navButtons = document.querySelectorAll('.nav-button');
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const viewId = btn.getAttribute('data-view');
+            switchView(viewId);
+        });
+    });
+}
+
+function switchView(viewId) {
+    // Убираем активный класс у всех кнопок навигации
+    document.querySelectorAll('.nav-button').forEach(b => b.classList.remove('is-active'));
+    const activeBtn = document.querySelector(`.nav-button[data-view="${viewId}"]`);
+    if (activeBtn) activeBtn.classList.add('is-active');
+
+    // Переключаем видимость экранов
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('is-visible'));
+    const targetView = document.getElementById(`${viewId}View`);
+    if (targetView) targetView.classList.add('is-visible');
+
+    // Если открыли рейтинг, загружаем данные
+    if (viewId === 'rating') loadLeaderboard();
+}
+
+// Кнопки перехода внутри контента (например, «К рынку автомобилей»)
+function setupExtraButtons() {
+    document.body.addEventListener('click', (e) => {
+        const switchTarget = e.target.getAttribute('data-switch');
+        if (switchTarget) {
+            switchView(switchTarget);
+        }
+    });
+
+    // Настройки: Начать заново
+    const resetBtn = document.getElementById('resetButton');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', async () => {
+            if (confirm("Вы уверены, что хотите обнулить весь прогресс?")) {
+                playerState.balance = 1500000;
+                playerState.xp = 0;
+                playerState.reputation = 100;
+                playerState.sold_count = 0;
+                playerState.profit_total = 0;
+                myGarage = [];
+                await savePlayerProfile();
+                updateUI();
+                alert("Прогресс сброшен!");
+                switchView('home');
+            }
+        });
+    }
+}
+
+// 5. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА И СТАТИСТИКИ
+function updateUI() {
+    const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+    
+    setTxt('balanceText', `${playerState.balance.toLocaleString()} ₸`);
+    setTxt('xpText', `${playerState.xp} / 1000`);
+    setTxt('reputationText', `${playerState.reputation}%`);
+    setTxt('soldText', playerState.sold_count);
+    setTxt('profileName', playerState.username);
+    setTxt('levelText', `Уровень ${Math.floor(playerState.xp / 500) + 1}`);
+    
+    const avatar = document.getElementById('avatarLetter');
+    if (avatar && playerState.username) avatar.innerText = playerState.username.charAt(0).toUpperCase();
+
+    renderMarket();
+    renderGarageViews();
+}
+
+// 6. ОТРИСОВКА РЫНКА ЧЕРЕЗ <TEMPLATE>
+function renderMarket() {
+    const marketList = document.getElementById('marketList');
+    const homeMarketList = document.getElementById('homeMarketList');
+    const template = document.getElementById('marketCardTemplate');
+    
+    if (!template) return;
+
+    const searchVal = (document.getElementById('searchInput')?.value || "").toLowerCase();
+    const conditionFilter = document.getElementById('conditionFilter')?.value || "all";
+
+    const filteredCars = carTemplates.filter(car => {
+        const matchesSearch = car.name.toLowerCase().includes(searchVal);
+        // Генерируем фиксированное состояние для рынка на основе ID для разнообразия
+        const cond = car.basePrice % 3 === 0 ? "poor" : car.basePrice % 2 === 0 ? "fair" : "good";
+        const matchesCond = conditionFilter === "all" || cond === conditionFilter;
+        return matchesSearch && matchesCond;
+    });
+
+    const createCard = (car) => {
+        const clone = template.content.cloneNode(true);
+        
+        // Заполняем данные по классам из твоего HTML
+        clone.querySelector('.car-image').src = car.image;
+        clone.querySelector('.car-image').onerror = function() { this.src = 'assets/camry.svg'; };
+        clone.querySelector('.card-title h2').innerText = `${car.name} (${car.year} г.)`;
+        
+        // Состояние
+        const condBadge = clone.querySelector('.condition-badge');
+        const cond = car.basePrice % 3 === 0 ? "Плохое" : car.basePrice % 2 === 0 ? "Среднее" : "Хорошее";
+        if (condBadge) condBadge.innerText = cond;
+
+        clone.querySelector('.price-text').innerText = `${car.basePrice.toLocaleString()} ₸`;
+        
+        const estRepair = Math.floor(car.basePrice * 0.22);
+        clone.querySelector('.visible-cost').innerText = `${estRepair.toLocaleString()} ₸`;
+        
+        const estProfit = Math.floor((car.basePrice * car.resaleMult) - car.basePrice - estRepair);
+        clone.querySelector('.forecast-text').innerText = `~ +${estProfit.toLocaleString()} ₸`;
+        clone.querySelector('.risk-text').innerText = estProfit > 100000 ? "Выгодная сделка" : "Средняя доходность";
+
+        // Кнопка покупки
+        const buyBtn = clone.querySelector('.buy-button');
+        buyBtn.addEventListener('click', () => buyCar(car));
+
+        return clone;
+    };
+
+    if (marketList) {
+        marketList.innerHTML = '';
+        filteredCars.forEach(car => marketList.appendChild(createCard(car)));
+    }
+
+    if (homeMarketList) {
+        homeMarketList.innerHTML = '';
+        filteredCars.slice(0, 3).forEach(car => homeMarketList.appendChild(createCard(car)));
+    }
+}
+
+// Фильтры поиска на рынке
+function initFilters() {
+    const search = document.getElementById('searchInput');
+    const cond = document.getElementById('conditionFilter');
+    const deal = document.getElementById('dealFilter');
+    const refreshBtn = document.getElementById('newDealsButton');
+
+    [search, cond, deal].forEach(el => {
+        if (el) el.addEventListener('input', renderMarket);
+    });
+
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            alert("Порядок авторынка обновлен!");
+            renderMarket();
+        });
+    }
+}
+
+// 7. ОТРИСОВКА ГАРАЖА, РЕМОНТА И ПРОДАЖ ЧЕРЕЗ <TEMPLATE>
+function renderGarageViews() {
+    const lists = {
+        garage: document.getElementById('garageList'),
+        homeGarage: document.getElementById('homeGarageList'),
+        repair: document.getElementById('repairList'),
+        sale: document.getElementById('saleList')
+    };
+    
+    const template = document.getElementById('garageCardTemplate');
+    if (!template) return;
+
+    // Очищаем списки
+    Object.values(lists).forEach(l => { if (l) l.innerHTML = ''; });
+
+    if (myGarage.length === 0) {
+        const emptyMsg = '<p style="color:#9aa7b7; padding:16px;">В гараже пока нет автомобилей.</p>';
+        if (lists.garage) lists.garage.innerHTML = emptyMsg;
+        if (lists.repair) lists.repair.innerHTML = emptyMsg;
+        if (lists.sale) lists.sale.innerHTML = emptyMsg;
+        if (lists.homeGarage) lists.homeGarage.innerHTML = emptyMsg;
+        return;
+    }
+
+    myGarage.forEach(car => {
+        const createGarageCard = (viewMode) => {
+            const clone = template.content.cloneNode(true);
+            
+            clone.querySelector('.garage-image').src = car.image;
+            clone.querySelector('.garage-image').onerror = function() { this.src = 'assets/camry.svg'; };
+            clone.querySelector('.card-title h2').innerText = car.name;
+            clone.querySelector('.garage-meta').innerText = `${car.year} год выпуска`;
+            
+            // Состояние авто (Health)
+            clone.querySelector('.health-text').innerText = car.broken ? "35% (Требуется ремонт)" : "100% (Идеальное)";
+            const sysBars = clone.querySelector('.system-bars');
+            if (sysBars) {
+                sysBars.innerHTML = `
+                    <div style="font-size:12px; color:#9aa7b7; margin-bottom:4px;">Двигатель: ${car.broken ? '⚠️ Требует переборки' : '✅ Обслужен'}</div>
+                    <div style="font-size:12px; color:#9aa7b7;">Ходовая часть: ${car.broken ? '⚠️ Замена стоек' : '✅ Отлично'}</div>
+                `;
+            }
+
+            // Финансовый блок
+            clone.querySelector('.purchase-text').innerText = `${car.purchasePrice.toLocaleString()} ₸`;
+            clone.querySelector('.repair-text').innerText = `${car.repairCost.toLocaleString()} ₸`;
+            
+            let currentVal = car.broken ? Math.floor(car.sellPrice * 0.5) : car.sellPrice;
+            clone.querySelector('.value-text').innerText = `${currentVal.toLocaleString()} ₸`;
+            
+            let finalResult = currentVal - car.purchasePrice - (car.broken ? 0 : car.repairCost);
+            const resEl = clone.querySelector('.result-text');
+            resEl.innerText = `${finalResult >= 0 ? '+' : ''}${finalResult.toLocaleString()} ₸`;
+            resEl.style.color = finalResult >= 0 ? '#10b981' : '#ef4444';
+
+            // Настройка кнопок управления в зависимости от вкладки
+            const diagBtn = clone.querySelector('.diagnose-button');
+            const sellBtn = clone.querySelector('.sell-button');
+
+            if (car.broken) {
+                diagBtn.innerText = `Починить (-${car.repairCost.toLocaleString()} ₸)`;
+                diagBtn.addEventListener('click', () => repairCar(car.instanceId));
+                sellBtn.innerText = "Сдать перекупам (В минус)";
+                sellBtn.style.background = "#475569";
+            } else {
+                diagBtn.style.display = "none"; // Скрываем ремонт, если починена
+                sellBtn.innerText = "Продать клиенту";
+                sellBtn.style.background = "#2f6df6";
+            }
+
+            sellBtn.addEventListener('click', () => sellCar(car.instanceId));
+
+            return clone;
+        };
+
+        // Распределяем карточку по вкладкам твоего приложения
+        if (lists.garage) lists.garage.appendChild(createGarageCard('garage'));
+        if (lists.repair && car.broken) lists.repair.appendChild(createGarageCard('repair'));
+        if (lists.sale && !car.broken) lists.sale.appendChild(createGarageCard('sale'));
+    });
+
+    // Для главной страницы выводим 1 последнюю тачку
+    if (lists.homeGarage && myGarage.length > 0) {
+        const homeClone = template.content.cloneNode(true);
+        homeClone.querySelector('.card-title h2').innerText = myGarage[0].name;
+        homeClone.querySelector('.garage-image').src = myGarage[0].image;
+        homeClone.querySelector('.garage-image').onerror = function() { this.src = 'assets/camry.svg'; };
+        homeClone.querySelector('.garage-actions').style.display = "none"; // на главном экране без кнопок
+        lists.homeGarage.appendChild(homeClone);
+    }
+}
+
+// 8. ИГРОВАЯ ЛОГИКА ОПЕРАЦИЙ
+async function buyCar(car) {
+    if (playerState.balance < car.basePrice) {
+        alert("Недостаточно денег для покупки этого автомобиля!");
+        return;
+    }
+
+    playerState.balance -= car.basePrice;
+    
+    myGarage.push({
+        instanceId: Date.now(),
+        id: car.id,
+        name: car.name,
+        year: car.year,
+        purchasePrice: car.basePrice,
+        repairCost: Math.floor(car.basePrice * 0.22),
+        sellPrice: Math.floor(car.basePrice * car.resaleMult),
+        image: car.image,
+        broken: true
+    });
+
+    logEvent(`Куплен автомобиль ${car.name} за ${car.basePrice.toLocaleString()} ₸. Сдан в гараж на диагностику.`);
+    alert(`${car.name} успешно куплен и отправлен в гараж!`);
+    updateUI();
+    await savePlayerProfile();
+}
+
+async function repairCar(instanceId) {
+    const car = myGarage.find(c => c.instanceId === instanceId);
+    if (!car) return;
+
+    if (playerState.balance < car.repairCost) {
+        alert("Не хватает средств на покупку запчастей для ремонта!");
+        return;
+    }
+
+    playerState.balance -= car.repairCost;
+    car.broken = false;
+    playerState.xp += 200; // Опыт за починку
+
+    logEvent(`Проведен полный ремонт ${car.name}. Машина готова к розничной продаже.`);
+    alert(`Ремонт завершен! Машина полностью исправна. Получено +200 XP`);
+    updateUI();
+    await savePlayerProfile();
+}
+
+async function sellCar(instanceId) {
+    const carIndex = myGarage.findIndex(c => c.instanceId === instanceId);
+    if (carIndex === -1) return;
+
+    const car = myGarage[carIndex];
+    let finalPrice = car.broken ? Math.floor(car.sellPrice * 0.5) : car.sellPrice;
+    
+    playerState.balance += finalPrice;
+    playerState.sold_count += 1;
+    
+    let profit = finalPrice - car.purchasePrice - (car.broken ? 0 : car.repairCost);
+    if (profit > 0) playerState.profit_total += profit;
+
+    logEvent(`Продан автомобиль ${car.name} за ${finalPrice.toLocaleString()} ₸. Чистая прибыль: ${profit.toLocaleString()} ₸.`);
+    alert(`Сделка совершена! Автомобиль продан за ${finalPrice.toLocaleString()} ₸`);
+    
+    myGarage.splice(carIndex, 1);
+    updateUI();
+    await savePlayerProfile();
+}
+
+// Логирование событий в твой список событий
+function logEvent(text) {
+    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const eventsList = document.getElementById('eventsList');
+    const homeEventsList = document.getElementById('homeEventsList');
+    
+    const itemHtml = `<div style="padding:10px; border-bottom:1px solid #263447; color:#9aa7b7; font-size:14px;"><strong>[${time}]</strong> ${text}</div>`;
+    
+    if (eventsList) eventsList.insertAdjacentHTML('afterbegin', itemHtml);
+    if (homeEventsList) homeEventsList.insertAdjacentHTML('afterbegin', itemHtml);
+}
+
+// 9. БАЗА ДАННЫХ И SUPABASE PROFILE
 async function loadPlayerProfile() {
     try {
         let { data: profile, error } = await window.supabaseClient
@@ -76,9 +399,7 @@ async function loadPlayerProfile() {
             playerState.profit_total = profile.profit_total;
         }
         hideAuthModal();
-    } catch (err) {
-        console.error("Ошибка загрузки:", err);
-    }
+    } catch (err) { console.error(err); }
 }
 
 async function createPlayerProfile(username) {
@@ -97,136 +418,86 @@ async function savePlayerProfile() {
     }).eq('id', playerState.id);
 }
 
-// 5. ОБНОВЛЕНИЕ ИНТЕРФЕЙСА
-function updateUI() {
-    const setTxt = (selector, val) => {
-        const el = document.querySelector(selector);
-        if (el) el.innerText = val;
-    };
+// 10. МОДАЛКА АВТОРИЗАЦИИ СИНХРОННО С ТВОИМ HTML
+function initAuth() {
+    const overlay = document.getElementById('authOverlay');
+    const form = document.getElementById('authForm');
+    const toggleBtn = document.getElementById('authToggleType');
+    const title = document.getElementById('authTitle');
+    const desc = document.getElementById('authDesc');
+    const usernameLabel = document.getElementById('usernameLabel');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const logoutBtn = document.getElementById('logoutButton');
 
-    setTxt('.stats-container .stat-card:nth-child(1) span', `${playerState.balance.toLocaleString()} ₸`);
-    setTxt('#player-balance', `${playerState.balance.toLocaleString()} ₸`);
-    setTxt('.stats-container .stat-card:nth-child(2) span', `${playerState.xp} / 1000`);
-    setTxt('#player-xp', `${playerState.xp} / 1000`);
-    setTxt('.stats-container .stat-card:nth-child(3) span', `${playerState.reputation}%`);
-    setTxt('#player-reputation', `${playerState.reputation}%`);
-    setTxt('.stats-container .stat-card:nth-child(4) span', playerState.sold_count);
-    setTxt('#player-sold', playerState.sold_count);
-    
-    const currentLevel = Math.floor(playerState.xp / 500) + 1;
-    setTxt('.stats-container .stat-card:nth-child(5) span', `${playerState.username} (Ур. ${currentLevel})`);
-    setTxt('#player-level', `${playerState.username} (Ур. ${currentLevel})`);
-    
-    renderMarket(); 
-    renderGarage();
-}
+    let isSignUpMode = true;
 
-function initNavigation() {
-    const navItems = document.querySelectorAll('.sidebar-menu li, .menu-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            navItems.forEach(i => i.classList.remove('active'));
-            item.classList.add('active');
-            if (item.innerText.includes('Рейтинг') || item.getAttribute('data-tab') === 'rating') {
-                loadLeaderboard();
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+            isSignUpMode = !isSignUpMode;
+            title.innerText = isSignUpMode ? "Регистрация мастера" : "Вход в мастерскую";
+            desc.innerText = isSignUpMode ? "Создайте аккаунт, чтобы попасть в облачный рейтинг механиков." : "Введи данные своей мастерской для загрузки прогресса.";
+            usernameLabel.style.display = isSignUpMode ? "flex" : "none";
+            document.getElementById('authUsername').required = isSignUpMode;
+            submitBtn.innerText = isSignUpMode ? "Зарегистрироваться" : "Войти в игру";
+            toggleBtn.innerText = isSignUpMode ? "Уже есть аккаунт? Войти" : "Нет аккаунта? Зарегистрироваться";
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value.trim();
+            const password = document.getElementById('authPassword').value.trim();
+            const username = document.getElementById('authUsername').value.trim();
+
+            if (isSignUpMode) {
+                const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
+                if (error) alert(error.message);
+                else if (data.user) {
+                    playerState.id = data.user.id; playerState.username = username;
+                    await createPlayerProfile(username); hideAuthModal(); updateUI();
+                }
+            } else {
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
+                if (error) alert(error.message);
+                else if (data.user) {
+                    playerState.id = data.user.id; await loadPlayerProfile(); hideAuthModal(); updateUI();
+                }
             }
         });
-    });
-}
-
-// 6. ОТРИСОВКА РЫНКА И ГАРАЖА (ВКЛЮЧАЯ КАРТИНКИ)
-function renderMarket() {
-    const marketContainer = document.getElementById('market-list') || document.querySelector('.market-container');
-    if (!marketContainer) return;
-    
-    marketContainer.innerHTML = carTemplates.map(car => {
-        // Динамический расчет ремонта (25% от цены покупки)
-        const estRepair = Math.floor(car.basePrice * 0.25);
-        return `
-            <div style="background:#1e293b; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-family:sans-serif;">
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <img src="${car.image}" alt="${car.name}" style="width:70px; height:45px; object-fit:cover; border-radius:4px; background:#0f172a;" onerror="this.style.display='none'">
-                    <div>
-                        <strong style="font-size:16px; color:#3b82f6;">${car.name} (${car.year} г.)</strong><br>
-                        <span style="color:#94a3b8; font-size:13px;">Цена: ${car.basePrice.toLocaleString()} ₸ | Расход на ремонт: ~${estRepair.toLocaleString()} ₸</span>
-                    </div>
-                </div>
-                <button class="buy-car-btn" data-id="${car.id}" style="background:#3b82f6; border:none; padding:8px 15px; border-radius:5px; color:#fff; cursor:pointer; font-weight:bold;">Купить</button>
-            </div>
-        `;
-    }).join('');
-}
-
-function renderGarage() {
-    const garageContainer = document.getElementById('garage-list') || document.querySelector('.garage-container');
-    if (!garageContainer) return;
-    
-    if (myGarage.length === 0) {
-        garageContainer.innerHTML = '<p style="color:#64748b; text-align:center; padding:20px; font-family:sans-serif;">В гараже пусто. Закупитесь тачками на авторынке!</p>';
-        return;
     }
-    garageContainer.innerHTML = myGarage.map(car => `
-        <div style="background:#1e293b; padding:15px; border-radius:8px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; color:#fff; font-family:sans-serif;">
-            <div style="display:flex; align-items:center; gap:15px;">
-                <img src="${car.image}" alt="${car.name}" style="width:70px; height:45px; object-fit:cover; border-radius:4px; background:#0f172a;" onerror="this.style.display='none'">
-                <div>
-                    <strong>${car.name}</strong> 
-                    <span style="color:${car.broken ? '#ef4444' : '#10b981'}; font-size:12px; margin-left:10px;">
-                        [${car.broken ? 'Хлам (Нужен ремонт)' : 'Восстановлена'} ]
-                    </span><br>
-                    <span style="color:#94a3b8; font-size:13px;">Цена перепродажи: ${(car.broken ? Math.floor(car.sellPrice*0.4) : car.sellPrice).toLocaleString()} ₸</span>
-                </div>
-            </div>
-            <div>
-                ${car.broken ? `<button class="repair-car-btn" data-instance-id="${car.instanceId}" style="background:#eab308; border:none; padding:6px 12px; border-radius:5px; cursor:pointer; margin-right:5px; font-weight:bold; color:#000;">Починить (${car.repairCost.toLocaleString()} ₸)</button>` : ''}
-                <button class="sell-car-btn" data-instance-id="${car.instanceId}" style="background:#10b981; border:none; padding:6px 12px; border-radius:5px; color:#fff; cursor:pointer;">Продать</button>
-            </div>
-        </div>
-    `).join('');
+
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            await window.supabaseClient.auth.signOut();
+            playerState.id = null;
+            showAuthModal();
+        });
+    }
 }
 
-// 7. ИГРОВЫЕ ДЕЙСТВИЯ (ОБРАБОТКА СТРОКОВЫХ ID)
-function setupGameEventListeners() {
-    document.body.onclick = null; // убираем старые дубли событий
-    
-    document.body.addEventListener('click', async (e) => {
-        // ПОКУПКА С РЫНКА
-        if (e.target.classList.contains('buy-car-btn')) {
-            const carId = e.target.getAttribute('data-id'); // считываем как строку (например "audi-a4")
-            const car = carTemplates.find(c => c.id === carId);
+function showAuthModal() { const o = document.getElementById('authOverlay'); if(o) o.style.display = 'flex'; }
+function hideAuthModal() { const o = document.getElementById('authOverlay'); if(o) o.style.display = 'none'; }
 
-            if (car && playerState.balance >= car.basePrice) {
-                playerState.balance -= car.basePrice;
-                
-                // Рассчитываем экономику конкретного экземпляра при покупке
-                const repairCost = Math.floor(car.basePrice * 0.25); // 25% на ремонт
-                const sellPrice = Math.floor(car.basePrice * car.resaleMult); // Цена готовой тачки с учетом множителя
+async function loadLeaderboard() {
+    try {
+        const { data: topPlayers } = await window.supabaseClient
+            .from('profiles')
+            .select('username, profit_total')
+            .order('profit_total', { ascending: false }).limit(5);
 
-                myGarage.push({
-                    instanceId: Date.now(),
-                    id: car.id,
-                    name: `${car.name} (${car.year})`,
-                    price: car.basePrice,
-                    repairCost: repairCost,
-                    sellPrice: sellPrice,
-                    image: car.image,
-                    broken: true
-                });
-                
-                alert(`Вы купили ${car.name}! Машина отбуксирована в гараж.`);
-                updateUI();
-                await savePlayerProfile();
-            } else if (car) {
-                alert("Не хватает бюджета на покупку этого авто!");
-            }
-        }
+        const rList = document.getElementById('ratingList');
+        const hList = document.getElementById('homeRatingList');
+        if (!topPlayers) return;
 
-        // РЕМОНТ В ГАРАЖЕ
-        if (e.target.classList.contains('repair-car-btn')) {
-            const instanceId = parseInt(e.target.getAttribute('data-instance-id'));
-            const car = myGarage.find(c => c.instanceId === instanceId);
-            if (car && car.broken) {
-                if (playerState.balance >= car.repairCost) {
-                    playerState.balance -= car.repairCost;
-                    car.broken = false;
-                    playerState.xp += 1
+        const html = topPlayers.map((p, idx) => `
+            <div style="display:flex; justify-content:space-between; padding:12px; border-bottom:1px solid #263447; color:#fff;">
+                <span>${idx + 1}. 🛠 ${p.username}</span>
+                <span style="color:#10b981; font-weight:bold;">+${p.profit_total.toLocaleString()} ₸</span>
+            </div>
+        `).join('');
+
+        if (rList) rList.innerHTML = html;
+        if (hList) hList.innerHTML = html;
+    } catch(e){}
+}
