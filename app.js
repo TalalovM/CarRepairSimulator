@@ -1,6 +1,6 @@
 // 1. НАСТРОЙКА SUPABASE
-const SUPABASE_URL = "https://ycmvhvsbcexxpuzdskpu.supabase.co";
-const SUPABASE_KEY = "sb_publishable_ztQr6Kblgt4kb-3R3nhiPg_ctswPZb6";
+const SUPABASE_URL = "https://ycmvhvsbcexxpuzdskpu.supabase.co"; // СЮДА ВСТАВЬ СВОЙ URL ИЗ НАСТРОЕК SUPABASE
+const SUPABASE_KEY = "sb_publishable_ztQr6Kblgt4kb-3R3nhiPg_ctswPZb6"; // Твой рабочий ключ
 
 if (!window.supabaseClient) {
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -27,23 +27,77 @@ const carTemplates = [
   { id: "mercedes-w124", name: "Mercedes-Benz W124", year: 1994, basePrice: 700000, resaleMult: 1.45, image: "assets/mercedes-benz-w124.jpg" },
   { id: "mercedes-w201", name: "Mercedes-Benz W201", year: 1991, basePrice: 500000, resaleMult: 1.50, image: "assets/mercedes-benz-w201.jpg" },
   { id: "mercedes-w211", name: "Mercedes-Benz W211", year: 2004, basePrice: 900000, resaleMult: 1.32, image: "assets/mercedes-benz-w211.jpg" },
-  { id: "mercedes-w204", name: "Mercedes-Benz W204", year: 2011, basePrice: 1100000, resaleMult: 1.28, image: "assets/mercedes-Цw204.jpg" },
+  { id: "mercedes-w204", name: "Mercedes-Benz W204", year: 2011, basePrice: 1100000, resaleMult: 1.28, image: "assets/mercedes-w204.jpg" },
   { id: "toyota-mark-2", name: "Toyota Mark II", year: 1998, basePrice: 950000, resaleMult: 1.42, image: "assets/toyota-mark-2.jpg" },
   { id: "volkswagen-golf-5", name: "VW Golf V", year: 2007, basePrice: 950000, resaleMult: 1.34, image: "assets/volkswagen-golf-5.jpg" }
 ];
 
-// Массив для динамического авторынка
 let currentMarketCars = [];
 let myGarage = [];
 
-// 3. ИНИЦИАЛИЗАЦИЯ
+// 3. СИСТЕМА КРАСИВЫХ УВЕДОМЛЕНИЙ (ПОЯВЛЯЮТСЯ ВНИЗУ СПРАВА)
+function showNotification(message, type = 'success') {
+    // Ищем или создаем контейнер для уведомлений
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = `
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        `;
+        document.body.appendChild(container);
+    }
+
+    // Создаем саму плашку
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        background: #1e293b;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        border-left: 4px solid ${type === 'error' ? '#ef4444' : '#10b981'};
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        font-family: sans-serif;
+        font-size: 14px;
+        min-width: 250px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+    `;
+    toast.innerText = message;
+
+    container.appendChild(toast);
+
+    // Анимация появления
+    setTimeout(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+    }, 10);
+
+    // Автоматическое удаление через 3 секунды с анимацией затухания
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-20px)';
+        setTimeout(() => {
+            toast.remove();
+        }, 300);
+    }, 3000);
+}
+
+// 4. ИНИЦИАЛИЗАЦИЯ ИГРЫ
 document.addEventListener("DOMContentLoaded", async () => {
     initNavigation();
     initAuth();
     initFilters();
     setupExtraButtons();
     
-    // Генерируем машины для рынка при первом запуске
     generateMarketStock();
 
     try {
@@ -61,14 +115,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateUI();
 });
 
-// ГЕНЕРАЦИЯ ДИНАМИЧЕСКОГО РЫНКА (ДЛЯ ОБНОВЛЕНИЯ)
 function generateMarketStock() {
     const conditions = ['poor', 'fair', 'good'];
     
     currentMarketCars = carTemplates.map(car => {
-        // Случайное состояние для каждой машины
         const randomCond = conditions[Math.floor(Math.random() * conditions.length)];
-        
         let priceModifier = 1;
         let repairModifier = 1;
         
@@ -90,7 +141,6 @@ function generateMarketStock() {
         };
     });
 
-    // Перемешиваем массив случайным образом
     currentMarketCars.sort(() => Math.random() - 0.5);
 }
 
@@ -134,7 +184,7 @@ function setupExtraButtons() {
                 myGarage = [];
                 await savePlayerProfile();
                 updateUI();
-                alert("Прогресс сброшен!");
+                showNotification("Прогресс успешно сброшен!", "success");
                 switchView('home');
             }
         });
@@ -158,7 +208,6 @@ function updateUI() {
     renderGarageViews();
 }
 
-// 6. ОТРИСОВКА РЫНКА С СИНХРОНИЗАЦИЕЙ СТИЛЕЙ И КЛАССОВ
 function renderMarket() {
     const marketList = document.getElementById('marketList');
     const homeMarketList = document.getElementById('homeMarketList');
@@ -180,30 +229,25 @@ function renderMarket() {
     const createCard = (car) => {
         const clone = template.content.cloneNode(true);
         
-        // Заполняем картинку и тексты
         clone.querySelector('.car-image').src = car.image;
         clone.querySelector('.car-image').onerror = function() { this.src = 'assets/camry.svg'; };
         clone.querySelector('.card-title h2').innerText = car.name;
-        
-        // Наполняем мета-данные (исправляет сдвиг дизайна)
         clone.querySelector('.car-meta').innerText = `${car.year} г.в. | Мультипликатор: x${car.resaleMult}`;
 
-        // Присваиваем класс состоянию (poor, fair, good) для подсветки badges в CSS
         const condBadge = clone.querySelector('.condition-badge');
         if (condBadge) {
             const condLabels = { poor: 'Плохое', fair: 'Среднее', good: 'Хорошее' };
             condBadge.innerText = condLabels[car.condition];
-            condBadge.classList.add(car.condition); // Добавит класс 'poor', 'fair' или 'good'
+            condBadge.classList.add(car.condition);
         }
 
         clone.querySelector('.price-text').innerText = `${car.currentPrice.toLocaleString()} ₸`;
         clone.querySelector('.visible-cost').innerText = `${car.estRepair.toLocaleString()} ₸`;
         
-        // Подсветка прогноза цен (добавляем классы positive / danger для CSS)
         const forecastEl = clone.querySelector('.forecast-text');
         if (forecastEl) {
             forecastEl.innerText = `~ +${car.estProfit.toLocaleString()} ₸`;
-            forecastEl.classList.add(car.dealType); // Добавит класс 'positive' или 'danger'
+            forecastEl.classList.add(car.dealType);
         }
 
         const riskEl = clone.querySelector('.risk-text');
@@ -240,9 +284,9 @@ function initFilters() {
 
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
-            generateMarketStock(); // РЕАЛЬНО ОБНОВЛЯЕТ И ПЕРЕМЕШИВАЕТ РЫНОК
+            generateMarketStock();
             renderMarket();
-            alert("Авторынок полностью обновлен! Цены и состояния изменились.");
+            showNotification("🔄 Авторынок обновлен! Цены и условия изменились.", "success");
         });
     }
 }
@@ -274,7 +318,6 @@ function renderGarageViews() {
             clone.querySelector('.garage-image').onerror = function() { this.src = 'assets/camry.svg'; };
             clone.querySelector('.card-title h2').innerText = car.name;
             clone.querySelector('.garage-meta').innerText = `${car.year} год выпуска`;
-            
             clone.querySelector('.health-text').innerText = car.broken ? "35% (Требуется ремонт)" : "100% (Идеальное)";
             
             const sysBars = clone.querySelector('.system-bars');
@@ -322,7 +365,7 @@ function renderGarageViews() {
 
 async function buyCar(car) {
     if (playerState.balance < car.currentPrice) {
-        alert("Недостаточно денег для покупки!");
+        showNotification("❌ Недостаточно денег для покупки!", "error");
         return;
     }
 
@@ -341,7 +384,7 @@ async function buyCar(car) {
     });
 
     logEvent(`Куплен ${car.name} за ${car.currentPrice.toLocaleString()} ₸.`);
-    alert(`${car.name} отправлен в гараж!`);
+    showNotification(`🏎️ ${car.name} отправлен в гараж!`, "success");
     updateUI();
     await savePlayerProfile();
 }
@@ -351,7 +394,7 @@ async function repairCar(instanceId) {
     if (!car || !car.broken) return;
 
     if (playerState.balance < car.repairCost) {
-        alert("Не хватает средств на запчасти!");
+        showNotification("❌ Не хватает средств на покупку запчастей!", "error");
         return;
     }
 
@@ -360,7 +403,7 @@ async function repairCar(instanceId) {
     playerState.xp += 200;
 
     logEvent(`Отремонтирован ${car.name}. Готов к продаже.`);
-    alert(`Ремонт завершен! Получено +200 XP`);
+    showNotification(`🔧 Ремонт завершен! Получено +200 XP`, "success");
     updateUI();
     await savePlayerProfile();
 }
@@ -379,7 +422,7 @@ async function sellCar(instanceId) {
     if (profit > 0) playerState.profit_total += profit;
 
     logEvent(`Продан ${car.name} за ${finalPrice.toLocaleString()} ₸.`);
-    alert(`Машина продана за ${finalPrice.toLocaleString()} ₸!`);
+    showNotification(`💰 Машина продана за ${finalPrice.toLocaleString()} ₸!`, "success");
     
     myGarage.splice(carIndex, 1);
     updateUI();
@@ -463,16 +506,18 @@ function initAuth() {
 
             if (isSignUpMode) {
                 const { data, error } = await window.supabaseClient.auth.signUp({ email, password });
-                if (error) alert(error.message);
+                if (error) showNotification(`❌ ${error.message}`, "error");
                 else if (data.user) {
                     playerState.id = data.user.id; playerState.username = username;
                     await createPlayerProfile(username); hideAuthModal(); updateUI();
+                    showNotification("🎉 Добро пожаловать в AutoFix!", "success");
                 }
             } else {
                 const { data, error } = await window.supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) alert(error.message);
+                if (error) showNotification(`❌ ${error.message}`, "error");
                 else if (data.user) {
                     playerState.id = data.user.id; await loadPlayerProfile(); hideAuthModal(); updateUI();
+                    showNotification(`🔧 Прогресс загружен. С возвращением, ${playerState.username}!`, "success");
                 }
             }
         });
@@ -483,6 +528,7 @@ function initAuth() {
             await window.supabaseClient.auth.signOut();
             playerState.id = null;
             showAuthModal();
+            showNotification("Вы вышли из аккаунта", "success");
         });
     }
 }
