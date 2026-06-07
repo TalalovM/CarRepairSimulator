@@ -1,6 +1,6 @@
 // 1. НАСТРОЙКА SUPABASE
-const SUPABASE_URL = "ТВОЙ_SUPABASE_URL_СЮДА";
-const SUPABASE_KEY = "ТВОЙ_ПУБЛИЧНЫЙ_ANON_KEY_СЮДА";
+const SUPABASE_URL = "https://ycmvhvsbcexxpuzdskpu.supabase.co";
+const SUPABASE_KEY = "sb_publishable_ztQr6Kblgt4kb-3R3nhiPg_ctswPZb6";
 
 if (!window.supabaseClient) {
     window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
